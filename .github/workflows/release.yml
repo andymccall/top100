@@ -15,7 +15,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake g++ libssl-dev
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTOP100_ENABLE_TESTS=OFF
       - name: Build
         run: cmake --build build --parallel
       - name: Package CLI + README
