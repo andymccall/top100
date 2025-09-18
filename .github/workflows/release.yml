@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-linux-tarball:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libssl-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Package CLI + README
+        run: |
+          mkdir -p dist
+          cp README.md dist/
+          cp build/top100_cli dist/
+          cp LICENSE NOTICE THIRD-PARTY-NOTICES.md dist/
+          tar -C dist -czf top100_cli-linux.tar.gz README.md LICENSE NOTICE THIRD-PARTY-NOTICES.md top100_cli
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: top100_cli-linux.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

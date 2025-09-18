@@ -1,0 +1,12 @@
+Top100 — Your Personal Movie List
+
+Copyright 2025 Andy McCall
+
+This product includes software developed by third parties:
+- nlohmann/json (MIT) — https://github.com/nlohmann/json
+- cpr (MIT) — https://github.com/libcpr/cpr
+- libcurl (curl license) — https://curl.se/libcurl/
+- OpenSSL (Apache-2.0 for v3; older versions under OpenSSL license) — https://www.openssl.org/
+- Boost.Test (BSL-1.0) — https://www.boost.org/
+
+The full license texts for these components are available at their respective repositories/sites. See also THIRD-PARTY-NOTICES.md in this repository.

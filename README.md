@@ -289,10 +289,9 @@ Notes:
 
 ## 📄 License
 
-This project uses third-party libraries under their respective licenses:
-- nlohmann/json
-- cpr (and libcurl, OpenSSL)
-- Boost.Test
+This project is licensed under the Apache License, Version 2.0. See `LICENSE` for details.
+
+Third-party components are used under their respective licenses; see `THIRD-PARTY-NOTICES.md` for an overview and links, and `NOTICE` for attributions.
 
 ## 📚 Developer docs (Doxygen)
 
@@ -305,3 +304,16 @@ You can generate API documentation with Doxygen; it will be written to the `docs
 Scope and notes:
 - The docs focus on public headers in `lib/` plus key CLI entry points in `cli/`.
 - Tests are excluded from the generated documentation to keep the API surface clear.
+
+## 🚀 Branching, releases, and docs
+
+- Branch strategy:
+  - `main`: stable; always releasable
+  - `develop`: integration branch for completed features
+  - `feature/*`: short-lived branches for focused changes; merge into `develop`
+- Releases:
+  - Create a tag like `vX.Y.Z` on `main` to trigger a GitHub Release build.
+  - The CI bundles `top100_cli` (Linux) with `README.md` into `top100_cli-linux.tar.gz` attached to the release.
+- Docs:
+  - On pushes to `main`, CI builds Doxygen and publishes `docs/html` to GitHub Pages.
+  - After enabling Pages for this repository (Source: GitHub Actions), the site will auto-update on merges to `main`.

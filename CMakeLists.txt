@@ -28,7 +28,11 @@ set(CPR_BUILD_TESTS OFF CACHE INTERNAL "")
 set(CPR_ENABLE_SSL ON CACHE INTERNAL "")
 FetchContent_MakeAvailable(cpr)
 
-find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework)
+# Prefer Boost CMake package (CONFIG); fall back to FindBoost module if not available
+find_package(Boost CONFIG QUIET COMPONENTS unit_test_framework)
+if(NOT Boost_FOUND)
+  find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+endif()
 
 # --- Core Library ---
 # Build as STATIC to avoid STL crossing shared library boundaries in tests/CLI
