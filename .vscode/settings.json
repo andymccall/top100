@@ -1,0 +1,29 @@
+{
+    // Associate headers without extension
+    "files.associations": {
+        "algorithm": "cpp",
+        "*.tpp": "cpp",
+        "*.hpp": "cpp",
+        "chrono": "cpp",
+        "fstream": "cpp"
+    },
+
+    // CMake Tools configuration
+    "cmake.configureOnOpen": true,
+    "cmake.generator": "Unix Makefiles",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.buildBeforeRun": true,
+    "cmake.defaultBuildTarget": "top100_cli",
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+    },
+
+    // C/C++ IntelliSense and compiler defaults
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
+
+    // Debugging convenience: use build dir for executables
+    "terminal.integrated.cwd": "${workspaceFolder}/build"
+}

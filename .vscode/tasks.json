@@ -1,0 +1,514 @@
+{
+	"$schema": "https://json.schemastore.org/tasks.json",
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "CMake: configure",
+			"type": "shell",
+			"command": "cmake -S . -B build",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "CMake: build",
+			"type": "shell",
+			"command": "cmake --build build --config Debug --parallel",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"dependsOn": [
+				"CMake: configure"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"detail": "Builds the project using CMake in the build folder"
+		},
+		{
+			"label": "Run: top100_cli",
+			"type": "shell",
+			"command": "./top100_cli",
+			"options": {
+				"cwd": "${workspaceFolder}/build"
+			},
+			"dependsOn": [
+				"CMake: build"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "Test: ctest",
+			"type": "shell",
+			"command": "ctest --output-on-failure",
+			"options": {
+				"cwd": "${workspaceFolder}/build"
+			},
+			"dependsOn": [
+				"CMake: build"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "CMake: configure",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"-S",
+				".",
+				"-B",
+				"build"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "CMake: configure",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"-S",
+				".",
+				"-B",
+				"build"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build after OMDb field extensions",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build with details view",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after linking fix",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build with duplicate handling",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with duplicate policy",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build after list view change",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build with ratings fields",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild static lib top100",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build",
+				"--config",
+				"Debug",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and run all tests",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cmake --build build --config Debug --parallel && ctest --test-dir build --output-on-failure"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Reconfigure and build tests",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cmake -S . -B build && cmake --build build --config Debug --parallel && ctest --test-dir build -N"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild and list granular tests",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cmake --build build --config Debug --parallel && ctest --test-dir build -N"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild and rerun failing test",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cmake --build build --config Debug --parallel && ctest --test-dir build -R movie_json_round_trip --output-on-failure"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Configure and build with CMake",
+			"type": "shell",
+			"command": "cmake -S . -B build && cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Reconfigure and retest (CMake policy 3.30)",
+			"type": "shell",
+			"command": "cmake -S . -B build && cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build with ranking feature and run tests",
+			"type": "shell",
+			"command": "cmake -S . -B build && cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run tests after ranking changes",
+			"type": "shell",
+			"command": "cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after ranking loop change",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and Run All Tests (ctest)",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run new ranking tests",
+			"type": "shell",
+			"command": "cd build && ctest -R ranking_ -V",
+			"group": "test"
+		},
+		{
+			"label": "Build after config integration",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after filesystem change",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Build and run all tests after menu tests",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Final rebuild and test full suite",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild and run tests (config+menu features)",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild and run tests after CMake fix",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build after BlueSky feature",
+			"type": "shell",
+			"command": "cmake --build build --parallel",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after fixes",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after BlueSky header/impl sync",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and run tests after adding BlueSky tests",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and run tests for post header/footer",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build project (Top100)",
+			"type": "shell",
+			"command": "cmake -S /home/andymccall/development/top100 -B /home/andymccall/development/top100/build && cmake --build /home/andymccall/development/top100/build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after Mastodon integration",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after fixing Multipart",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild (retry)",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and run tests (OMDb plot changes)",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and test after preferring full plot",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild tests after config default fix",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and run tests for plot/detail changes",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build and run tests",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after post-length changes",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Build after headers",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"group": "build"
+		}
+	]
+}
