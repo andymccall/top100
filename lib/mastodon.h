@@ -1,0 +1,37 @@
+//-------------------------------------------------------------------------------
+// Top100 — Your Personal Movie List
+//
+// File: lib/mastodon.h
+// Purpose: Mastodon client declarations.
+// Language: C++17 (header)
+//
+// Author: Andy McCall, mailme@andymccall.co.uk
+// Date: September 18, 2025
+//-------------------------------------------------------------------------------
+#pragma once
+
+#include <string>
+#include <optional>
+#include <vector>
+
+/** @defgroup services External service clients */
+/** Minimal Mastodon client helpers @ingroup services */
+
+// Verify the access token by calling /api/v1/accounts/verify_credentials
+/** Verify token via /api/v1/accounts/verify_credentials. @ingroup services */
+bool mastoVerify(const std::string& instanceBaseUrl, const std::string& accessToken);
+
+// Upload media and return the media id string
+/** Upload media and return media id. @ingroup services */
+std::optional<std::string> mastoUploadMedia(const std::string& instanceBaseUrl,
+                                            const std::string& accessToken,
+                                            const std::vector<unsigned char>& bytes,
+                                            const std::string& filename,
+                                            const std::string& contentType);
+
+// Post a status with optional single media id
+/** Post a status with optional media id. @ingroup services */
+bool mastoPostStatus(const std::string& instanceBaseUrl,
+                     const std::string& accessToken,
+                     const std::string& text,
+                     const std::optional<std::string>& mediaId);

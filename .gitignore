@@ -3,7 +3,8 @@
 /bld/
 /out/
 /bin/
-/lib/
+# Do NOT ignore the source directory named 'lib/'.
+# CMake outputs are already handled by file extensions below.
 
 # CMake generated files
 CMakeFiles/
