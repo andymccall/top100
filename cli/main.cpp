@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //-------------------------------------------------------------------------------
 // Top100 — Your Personal Movie List
 //
@@ -21,6 +22,7 @@
 #include "bluesky.h"
 #include "mastodon.h"
 #include <cpr/cpr.h>
+#include "posting.h"
 #include <limits>
 
 int main()
@@ -118,136 +120,7 @@ int main()
                     }
                     if (chosen) {
                         std::cout << "Posting to BlueSky...\n";
-
-                        // Compose post components
-                        const size_t LIMIT = 300; // BlueSky character limit
-                        auto service = cfg.blueSkyService.empty() ? std::string("https://bsky.social") : cfg.blueSkyService;
-                        const std::string header = cfg.postHeaderText;
-                        const std::string footer = cfg.postFooterText;
-                        const std::string titleLine = "🎬 " + chosen->title + " (" + std::to_string(chosen->year) + ")\n";
-                        const std::string directorLine = chosen->director.empty() ? std::string("") : ("🎥 Director: " + chosen->director + "\n");
-                        const std::string blankAfterDirector = "\n";
-                        const std::string plotOriginal = !chosen->plotShort.empty() ? chosen->plotShort : chosen->plotFull;
-                        const std::string rankingPrefix = "⭐ My ranking: ";
-                        const std::string rankingValue = (chosen->userRank > 0) ? ("#" + std::to_string(chosen->userRank) + "/100") : std::string("");
-                        const std::string rankingLine = rankingPrefix + rankingValue + "\n";
-                        const std::string imdbLine = (chosen->imdbRating > 0.0) ? ("⭐ IMDb ranking: " + std::to_string(chosen->imdbRating) + "/10\n") : std::string("");
-                        const std::string linkLine = chosen->imdbID.empty() ? std::string("") : ("🔗 https://www.imdb.com/title/" + chosen->imdbID + "/\n");
-
-                        // Doxygen: count Unicode code points in a UTF-8 string (not bytes).
-                        // @ingroup cli
-                        auto utf8_length = [](const std::string& s) -> size_t {
-                            size_t count = 0;
-                            for (unsigned char c : s) {
-                                // count bytes that are not continuation bytes (10xxxxxx)
-                                if ((c & 0xC0) != 0x80) ++count;
-                            }
-                            return count;
-                        };
-                        // Doxygen: truncate a UTF-8 string by code points, preserving boundaries.
-                        // Appends no suffix; caller may add an ellipsis.
-                        // @ingroup cli
-                        auto utf8_truncate = [](const std::string& s, size_t maxCodepoints) -> std::string {
-                            if (maxCodepoints == 0) return std::string();
-                            std::string out;
-                            out.reserve(s.size());
-                            size_t count = 0;
-                            const unsigned char* p = reinterpret_cast<const unsigned char*>(s.data());
-                            size_t i = 0, n = s.size();
-                            while (i < n && count < maxCodepoints) {
-                                unsigned char c = p[i];
-                                size_t charLen = 1;
-                                if ((c & 0x80) == 0x00) charLen = 1;           // 0xxxxxxx
-                                else if ((c & 0xE0) == 0xC0) charLen = 2;     // 110xxxxx
-                                else if ((c & 0xF0) == 0xE0) charLen = 3;     // 1110xxxx
-                                else if ((c & 0xF8) == 0xF0) charLen = 4;     // 11110xxx
-                                if (i + charLen > n) break; // safety
-                                out.append(s, i, charLen);
-                                i += charLen;
-                                ++count;
-                            }
-                            return out;
-                        };
-
-                        auto buildBody = [&](const std::string& plotText, bool includeFooter) {
-                            std::ostringstream oss;
-                            if (!header.empty()) oss << header << "\n\n";
-                            oss << titleLine;
-                            if (!directorLine.empty()) oss << directorLine;
-                            oss << blankAfterDirector;
-                            if (!plotText.empty()) oss << "Plot: " << plotText << "\n\n";
-                            oss << rankingLine;
-                            if (!imdbLine.empty()) oss << imdbLine;
-                            if (!linkLine.empty()) oss << linkLine;
-                            if (includeFooter && !footer.empty()) oss << "\n" << footer;
-                            return oss.str();
-                        };
-
-                        // 1) Try full post
-                        std::string bodyFull = buildBody(plotOriginal, true);
-                        std::string finalBody;
-                        if (utf8_length(bodyFull) <= LIMIT) {
-                            finalBody = bodyFull;
-                        } else {
-                            // 2) Try removing footer (no trailing blank line when footer omitted)
-                            std::string bodyNoFooter = buildBody(plotOriginal, false);
-                            if (utf8_length(bodyNoFooter) <= LIMIT) {
-                                finalBody = bodyNoFooter;
-                            } else {
-                                // 3) Keep footer, truncate plot to fit and add ellipsis
-                                const std::string ellipsis = "...";
-                                // Length of everything except the plot content
-                                // We need the length excluding plot text but including the plot prefix/suffix and footer
-                                // Rebuild the fixed parts explicitly
-                                std::ostringstream fixed;
-                                if (!header.empty()) fixed << header << "\n\n";
-                                fixed << titleLine;
-                                if (!directorLine.empty()) fixed << directorLine;
-                                fixed << blankAfterDirector;
-                                // Add plot prefix/suffix but not content
-                                fixed << "Plot: " << "" << "\n\n";
-                                fixed << rankingLine;
-                                if (!imdbLine.empty()) fixed << imdbLine;
-                                if (!linkLine.empty()) fixed << linkLine;
-                                if (!footer.empty()) fixed << "\n" << footer;
-                                size_t fixedLen = utf8_length(fixed.str());
-                                // Budget in code points for plot content plus ellipsis
-                                size_t ellLen = utf8_length(ellipsis);
-                                size_t budget = (LIMIT > fixedLen) ? (LIMIT - fixedLen) : 0;
-                                size_t keep = (budget > ellLen) ? (budget - ellLen) : 0;
-                                std::string truncated = utf8_truncate(plotOriginal, keep) + ellipsis;
-                                finalBody = buildBody(truncated, true);
-                                if (utf8_length(finalBody) > LIMIT && keep > 0) {
-                                    // Ensure under limit by shaving a few more chars if needed
-                                    // Estimate overshoot in code points
-                                    size_t low = 0, high = keep;
-                                    while (low < high) {
-                                        size_t mid = (low + high) / 2;
-                                        std::string t = utf8_truncate(plotOriginal, mid) + ellipsis;
-                                        std::string b = buildBody(t, true);
-                                        if (utf8_length(b) <= LIMIT) { low = mid + 1; finalBody = b; truncated = t; }
-                                        else { high = mid; }
-                                    }
-                                }
-                            }
-                        }
-
-                        auto session = bskyCreateSession(service, cfg.blueSkyIdentifier, cfg.blueSkyAppPassword);
-                        bool ok = false;
-                        if (session) {
-                            std::optional<std::string> blob;
-                            if (!chosen->posterUrl.empty() && chosen->posterUrl != "N/A") {
-                                auto img = cpr::Get(cpr::Url{chosen->posterUrl});
-                                if (img.status_code == 200 && !img.text.empty()) {
-                                    std::string contentType = "image/jpeg";
-                                    auto it = img.header.find("content-type");
-                                    if (it != img.header.end() && !it->second.empty()) contentType = it->second;
-                                    std::vector<unsigned char> bytes(img.text.begin(), img.text.end());
-                                    blob = bskyUploadImage(service, session->accessJwt, bytes, contentType);
-                                }
-                            }
-                            ok = bskyCreatePost(service, session->accessJwt, session->did, finalBody, blob);
-                        }
+                        bool ok = postMovieToBlueSky(cfg, *chosen);
                         std::cout << (ok ? "Posted successfully.\n" : "Failed to post.\n");
                     }
                 }
@@ -299,115 +172,7 @@ int main()
                     if (chosen) {
                         std::cout << "Posting to Mastodon...\n";
 
-                        const size_t LIMIT = 500; // Mastodon typical character limit
-                        const std::string header = cfg.postHeaderText;
-                        const std::string footer = cfg.postFooterText;
-                        const std::string titleLine = "🎬 " + chosen->title + " (" + std::to_string(chosen->year) + ")\n";
-                        const std::string directorLine = chosen->director.empty() ? std::string("") : ("🎥 Director: " + chosen->director + "\n");
-                        const std::string blankAfterDirector = "\n";
-                        const std::string plotOriginal = !chosen->plotShort.empty() ? chosen->plotShort : chosen->plotFull;
-                        const std::string rankingPrefix = "⭐ My ranking: ";
-                        const std::string rankingValue = (chosen->userRank > 0) ? ("#" + std::to_string(chosen->userRank) + "/100") : std::string("");
-                        const std::string rankingLine = rankingPrefix + rankingValue + "\n";
-                        const std::string imdbLine = (chosen->imdbRating > 0.0) ? ("⭐ IMDb ranking: " + std::to_string(chosen->imdbRating) + "/10\n") : std::string("");
-                        const std::string linkLine = chosen->imdbID.empty() ? std::string("") : ("🔗 https://www.imdb.com/title/" + chosen->imdbID + "/\n");
-
-                        auto utf8_length = [](const std::string& s) -> size_t {
-                            size_t count = 0;
-                            for (unsigned char c : s) {
-                                if ((c & 0xC0) != 0x80) ++count;
-                            }
-                            return count;
-                        };
-                        auto utf8_truncate = [](const std::string& s, size_t maxCodepoints) -> std::string {
-                            if (maxCodepoints == 0) return std::string();
-                            std::string out;
-                            out.reserve(s.size());
-                            size_t count = 0;
-                            const unsigned char* p = reinterpret_cast<const unsigned char*>(s.data());
-                            size_t i = 0, n = s.size();
-                            while (i < n && count < maxCodepoints) {
-                                unsigned char c = p[i];
-                                size_t charLen = 1;
-                                if ((c & 0x80) == 0x00) charLen = 1;
-                                else if ((c & 0xE0) == 0xC0) charLen = 2;
-                                else if ((c & 0xF0) == 0xE0) charLen = 3;
-                                else if ((c & 0xF8) == 0xF0) charLen = 4;
-                                if (i + charLen > n) break;
-                                out.append(s, i, charLen);
-                                i += charLen;
-                                ++count;
-                            }
-                            return out;
-                        };
-
-                        auto buildBody = [&](const std::string& plotText, bool includeFooter) {
-                            std::ostringstream oss;
-                            if (!header.empty()) oss << header << "\n\n";
-                            oss << titleLine;
-                            if (!directorLine.empty()) oss << directorLine;
-                            oss << blankAfterDirector;
-                            if (!plotText.empty()) oss << "Plot: " << plotText << "\n\n";
-                            oss << rankingLine;
-                            if (!imdbLine.empty()) oss << imdbLine;
-                            if (!linkLine.empty()) oss << linkLine;
-                            if (includeFooter && !footer.empty()) oss << "\n" << footer;
-                            return oss.str();
-                        };
-
-                        std::string bodyFull = buildBody(plotOriginal, true);
-                        std::string finalBody;
-                        if (utf8_length(bodyFull) <= LIMIT) {
-                            finalBody = bodyFull;
-                        } else {
-                            std::string bodyNoFooter = buildBody(plotOriginal, false);
-                            if (utf8_length(bodyNoFooter) <= LIMIT) {
-                                finalBody = bodyNoFooter;
-                            } else {
-                                const std::string ellipsis = "...";
-                                std::ostringstream fixed;
-                                if (!header.empty()) fixed << header << "\n\n";
-                                fixed << titleLine;
-                                if (!directorLine.empty()) fixed << directorLine;
-                                fixed << blankAfterDirector;
-                                fixed << "Plot: " << "" << "\n\n";
-                                fixed << rankingLine;
-                                if (!imdbLine.empty()) fixed << imdbLine;
-                                if (!linkLine.empty()) fixed << linkLine;
-                                if (!footer.empty()) fixed << "\n" << footer;
-                                size_t fixedLen = utf8_length(fixed.str());
-                                size_t ellLen = utf8_length(ellipsis);
-                                size_t budget = (LIMIT > fixedLen) ? (LIMIT - fixedLen) : 0;
-                                size_t keep = (budget > ellLen) ? (budget - ellLen) : 0;
-                                std::string truncated = utf8_truncate(plotOriginal, keep) + ellipsis;
-                                finalBody = buildBody(truncated, true);
-                                if (utf8_length(finalBody) > LIMIT && keep > 0) {
-                                    size_t low = 0, high = keep;
-                                    while (low < high) {
-                                        size_t mid = (low + high) / 2;
-                                        std::string t = utf8_truncate(plotOriginal, mid) + ellipsis;
-                                        std::string b = buildBody(t, true);
-                                        if (utf8_length(b) <= LIMIT) { low = mid + 1; finalBody = b; truncated = t; }
-                                        else { high = mid; }
-                                    }
-                                }
-                            }
-                        }
-
-                        std::optional<std::string> mediaId;
-                        if (!chosen->posterUrl.empty() && chosen->posterUrl != "N/A") {
-                            auto img = cpr::Get(cpr::Url{chosen->posterUrl});
-                            if (img.status_code == 200 && !img.text.empty()) {
-                                std::string contentType = "image/jpeg";
-                                auto it = img.header.find("content-type");
-                                if (it != img.header.end() && !it->second.empty()) contentType = it->second;
-                                std::string filename = "poster";
-                                if (contentType.find("png") != std::string::npos) filename += ".png"; else filename += ".jpg";
-                                std::vector<unsigned char> bytes(img.text.begin(), img.text.end());
-                                mediaId = mastoUploadMedia(cfg.mastodonInstance, cfg.mastodonAccessToken, bytes, filename, contentType);
-                            }
-                        }
-                        bool ok = mastoPostStatus(cfg.mastodonInstance, cfg.mastodonAccessToken, finalBody, mediaId);
+                        bool ok = postMovieToMastodon(cfg, *chosen);
                         std::cout << (ok ? "Posted successfully.\n" : "Failed to post.\n");
                     }
                 }

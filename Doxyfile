@@ -9,11 +9,14 @@ CREATE_SUBDIRS         = NO
 # Inputs
 INPUT                  = lib \
                          cli \
+                         ui \
                          README.md
 FILE_PATTERNS          = *.h \
                          *.hpp \
                          *.cpp \
-                         *.md
+                         *.md \
+                         *.qml \
+                         *.qrc
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */tests/*
 

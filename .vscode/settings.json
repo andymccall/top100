@@ -5,7 +5,10 @@
         "*.tpp": "cpp",
         "*.hpp": "cpp",
         "chrono": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "istream": "cpp",
+        "tuple": "cpp",
+        "variant": "cpp"
     },
 
     // CMake Tools configuration

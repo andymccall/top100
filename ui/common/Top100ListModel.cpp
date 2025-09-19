@@ -2,22 +2,12 @@
 //-------------------------------------------------------------------------------
 // Top100 — Your Personal Movie List
 //
-// File: cli/main.h
-// Purpose: Common includes for CLI entry and handlers.
+// File: ui/common/Top100ListModel.cpp
+// Purpose: Implementation unit for Top100ListModel (shared by Qt and KDE UIs).
 // Language: C++17 (CMake build)
 //
 // Author: Andy McCall, mailme@andymccall.co.uk
 // Date: September 18, 2025
 //-------------------------------------------------------------------------------
-#pragma once
-
-#include <iostream>
-#include <vector>
-#include <string>
-#include "top100.h"
-#include "displaymenu.h"
-#include "addmovie.h"
-#include "removemovie.h"
-#include "listmovies.h"
-#include "addfromomdb.h"
-#include "viewdetails.h"
+// Implementation unit for Top100ListModel. Most logic lives inline in the header for brevity.
+#include "Top100ListModel.h"

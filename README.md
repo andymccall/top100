@@ -71,10 +71,51 @@ cd build && ctest --output-on-failure
 ./build/top100_cli
 ```
 
-If you prefer VS Code tasks, this repo includes `.vscode/tasks.json` that builds and runs tests.
+If you use VS Code, this repo includes `.vscode/tasks.json` with handy tasks. In particular, “Clean & Rebuild (UIs + Tests)” will:
+- Remove the `build/` folder
+- Reconfigure with `-DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON -DTOP100_ENABLE_TESTS=ON`
+- Build everything and run the full test suite
+
+You can run it via Terminal > Run Task… (or Ctrl/Cmd+Shift+P → “Run Task”).
 
 
-## 🖥️ CLI usage
+## �️ Optional UI frontends
+
+In addition to the CLI, you can build optional desktop UIs:
+
+- Qt (cross‑platform) UI — Widgets‑based, no KDE dependencies
+- KDE UI — Kirigami/QML frontend with KDE Frameworks integration
+
+Both are disabled by default. Enable with CMake options:
+
+- `-DTOP100_UI_QT=ON` to build `top100_qt`
+- `-DTOP100_UI_KDE=ON` to build `top100_kde`
+
+Dependencies:
+
+- Qt UI: Qt 5 (Widgets) or Qt 6 (Widgets)
+- KDE UI: Qt Quick/QML (5 or 6) and Kirigami2 from KDE Frameworks (KF5 or KF6)
+
+Example build (out‑of‑tree):
+
+```bash
+# Qt UI only
+cmake -S . -B build -DTOP100_UI_QT=ON
+cmake --build build --target top100_qt
+
+# KDE UI (Kirigami)
+cmake -S . -B build -DTOP100_UI_KDE=ON
+cmake --build build --target top100_kde
+```
+
+If both are enabled, both executables are built. The UIs link the same core libraries; we’ll progressively wire features without duplicating logic.
+
+Consistent UI strings:
+- Both UIs read common display text (app names, window titles, hello text) from `ui/common/strings.h` so wording stays in sync.
+- A unit test named `ui_strings_constants` verifies these constants.
+
+
+## �🖥️ CLI usage
 
 By default, the first run creates `~/.top100_config.json` and stores your data at `~/top100/top100.json` (the folder is created if needed). You can change the data file path from the menu at any time. On startup, ranks are recomputed from scores to keep things consistent.
 
@@ -300,6 +341,10 @@ You can generate API documentation with Doxygen; it will be written to the `docs
 - Prerequisites: Doxygen (and Graphviz for call/caller graphs).
 - Run the docs build via the CMake target named `docs`.
 - Open `docs/html/index.html` in your browser when done. XML output is also generated at `docs/xml` for possible Sphinx/Breathe integration later.
+
+Online docs:
+- Canonical: https://andymccall.co.uk/top100/
+- Mirror: https://andymccall.github.io/top100/
 
 Scope and notes:
 - The docs focus on public headers in `lib/` plus key CLI entry points in `cli/`.

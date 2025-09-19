@@ -31,6 +31,10 @@ FetchContent_MakeAvailable(cpr)
 # Prefer Boost CMake package (CONFIG); fall back to FindBoost module if not available
 option(TOP100_ENABLE_TESTS "Build unit tests" ON)
 
+# Optional UI frontends
+option(TOP100_UI_QT "Build the Qt (cross-platform) UI" OFF)
+option(TOP100_UI_KDE "Build the KDE-enhanced (Kirigami) UI" OFF)
+
 # --- Core Library ---
 # Build as STATIC to avoid STL crossing shared library boundaries in tests/CLI
 add_library(top100 STATIC lib/top100.cpp)
@@ -53,11 +57,11 @@ add_executable(top100_cli
     cli/addmovie.cpp
     cli/removemovie.cpp
     cli/listmovies.cpp
-  cli/viewdetails.cpp
-  cli/dup_policy.h
+    cli/viewdetails.cpp
+    cli/dup_policy.h
     lib/omdb.cpp
     lib/bluesky.cpp
-  lib/mastodon.cpp
+    lib/mastodon.cpp
     cli/addfromomdb.cpp
     cli/comparemovies.cpp
     cli/comparemovies.h)
@@ -66,7 +70,12 @@ add_executable(top100_cli
 target_include_directories(top100_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cli ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 # link libraries for CLI
-target_link_libraries(top100_cli PRIVATE top100 top100_config top100_config_utils cpr::cpr nlohmann_json::nlohmann_json)
+target_link_libraries(top100_cli PRIVATE top100 top100_config top100_config_utils cpr::cpr nlohmann_json::nlohmann_json top100_services)
+
+# Services (BlueSky + Mastodon) in a reusable library for UIs
+add_library(top100_services STATIC lib/bluesky.cpp lib/mastodon.cpp lib/posting.cpp)
+target_include_directories(top100_services PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+target_link_libraries(top100_services PUBLIC cpr::cpr nlohmann_json::nlohmann_json)
 
 if(TOP100_ENABLE_TESTS)
   # Prefer Boost CMake package (CONFIG); fall back to FindBoost module if not available
@@ -134,6 +143,14 @@ if(TOP100_ENABLE_TESTS)
   target_link_libraries(test_config_utils PRIVATE top100_config top100_config_utils Boost::unit_test_framework)
   add_test(NAME cfg_utils_reject COMMAND test_config_utils --run_test=ConfigUtilsSuite/fails_when_verifier_rejects)
   add_test(NAME cfg_utils_accept COMMAND test_config_utils --run_test=ConfigUtilsSuite/succeeds_and_persists_when_verifier_accepts)
+
+  # UI strings test (header-only constants)
+  add_executable(test_ui_strings tests/test_ui_strings.cpp)
+  target_link_libraries(test_ui_strings PRIVATE Boost::unit_test_framework)
+  add_test(NAME ui_strings_constants COMMAND test_ui_strings)
+
+  # Expand aggregate tests_build dependencies to include all tests
+  add_dependencies(tests_build test_ranking test_config test_config_utils test_menu test_ui_strings)
 endif()
 
 # --- Documentation (Doxygen) ---
@@ -151,4 +168,73 @@ if(DOXYGEN_FOUND)
   endif()
 else()
   message(STATUS "Doxygen not found. 'docs' target will not be available.")
+endif()
+
+# --- UI Frontends -----------------------------------------------------------
+if(TOP100_UI_QT OR TOP100_UI_KDE)
+  # Enable Qt automoc/uic/rcc only if any UI is requested
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTORCC ON)
+  set(CMAKE_AUTOUIC ON)
+endif()
+
+if(TOP100_UI_QT)
+  # Prefer Qt6, fall back to Qt5
+  find_package(Qt6 QUIET COMPONENTS Widgets Concurrent Network)
+  if(Qt6_FOUND)
+  add_executable(top100_qt ui/qt/main.cpp ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
+  target_link_libraries(top100_qt PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network top100 top100_config top100_config_utils top100_services)
+    target_compile_features(top100_qt PRIVATE cxx_std_17)
+    set_target_properties(top100_qt PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
+  else()
+    find_package(Qt5 REQUIRED COMPONENTS Widgets Concurrent Network)
+  add_executable(top100_qt ui/qt/main.cpp ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
+  target_link_libraries(top100_qt PRIVATE Qt5::Widgets Qt5::Concurrent Qt5::Network top100 top100_config top100_config_utils top100_services)
+    target_compile_features(top100_qt PRIVATE cxx_std_17)
+    set_target_properties(top100_qt PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
+  endif()
+endif()
+
+if(TOP100_UI_KDE)
+  # KDE Kirigami UI (QML)
+  # Prefer Qt6 Quick/Qml first; only fall back to Qt5 if Qt6 isn't available.
+  set(_kirigami_target "")
+  set(_qt_quick_targets "")
+  set(_qt_major "")
+
+  find_package(Qt6 QUIET COMPONENTS Quick Qml Concurrent)
+  if(Qt6_FOUND)
+    set(_qt_major 6)
+    set(_qt_quick_targets Qt6::Quick Qt6::Qml Qt6::Concurrent)
+    # Link to Kirigami2 target if available for KF6; otherwise proceed with runtime QML module
+    find_package(KF6Kirigami2 QUIET)
+    if(KF6Kirigami2_FOUND)
+      set(_kirigami_target KF6::Kirigami2)
+    else()
+      message(WARNING "KF6 Kirigami2 CMake package not found. Building with Qt6 Quick; ensure qml6-module-org-kde-kirigami is installed at runtime.")
+    endif()
+  else()
+    # Qt6 not found; require Qt5 Quick/Qml and optionally link KF5 Kirigami
+  find_package(Qt5 REQUIRED COMPONENTS Quick Qml Concurrent)
+    set(_qt_major 5)
+  set(_qt_quick_targets Qt5::Quick Qt5::Qml Qt5::Concurrent)
+    find_package(KF5Kirigami2 QUIET)
+    if(KF5Kirigami2_FOUND)
+      set(_kirigami_target KF5::Kirigami2)
+    else()
+      message(WARNING "Kirigami2 CMake package not found. Building with Qt5 Quick; ensure qml-module-org-kde-kirigami2 is installed at runtime.")
+    endif()
+  endif()
+
+  # Resources: QML packaged via qrc using matching Qt major
+  if(_qt_major EQUAL 6)
+    qt_add_resources(kde_qml_qrc ui/kde/resources.qrc)
+  else()
+    qt5_add_resources(kde_qml_qrc ui/kde/resources.qrc)
+  endif()
+
+  add_executable(top100_kde ui/kde/main.cpp ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp ${kde_qml_qrc})
+  target_link_libraries(top100_kde PRIVATE ${_qt_quick_targets} ${_kirigami_target} top100 top100_config top100_config_utils top100_services)
+  target_compile_features(top100_kde PRIVATE cxx_std_17)
+  set_target_properties(top100_kde PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
 endif()

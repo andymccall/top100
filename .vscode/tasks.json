@@ -493,6 +493,19 @@
 			"group": "build"
 		},
 		{
+			"label": "Clean & Rebuild (UIs + Tests)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"rm -rf build && cmake -S . -B build -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON -DTOP100_ENABLE_TESTS=ON && cmake --build build --parallel && cd build && ctest --output-on-failure"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
+			"group": { "kind": "build", "isDefault": false },
+			"problemMatcher": ["$gcc"],
+			"detail": "Cleans the build folder, configures with both UIs enabled and tests on, builds all, and runs the test suite."
+		},
+		{
 			"label": "Build and run tests",
 			"type": "shell",
 			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",

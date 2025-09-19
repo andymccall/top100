@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //-------------------------------------------------------------------------------
 // Top100 — Your Personal Movie List
 //
@@ -8,6 +9,9 @@
 // Author: Andy McCall, mailme@andymccall.co.uk
 // Date: September 18, 2025
 //-------------------------------------------------------------------------------
+/*! \file lib/bluesky.cpp
+ *  \brief BlueSky API integration: session, blob upload, create post.
+ */
 #include "bluesky.h"
 #include "Movie.h"
 #include <cpr/cpr.h>

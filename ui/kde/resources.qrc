@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+  Top100 — Your Personal Movie List
+  File: ui/kde/resources.qrc
+  Purpose: QRC resource file for KDE UI.
+  Language: XML (Qt Resource Collection)
+  Author: Andy McCall, mailme@andymccall.co.uk
+  Date: September 18, 2025
+-->
+<RCC>
+  <qresource prefix="/">
+    <file>qml/Main.qml</file>
+  </qresource>
+</RCC>
