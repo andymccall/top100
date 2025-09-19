@@ -47,6 +47,8 @@ public:
     void addMovie(const Movie& movie);
     /** @brief Remove by title (first match). No-op if not found. */
     void removeMovie(const std::string& title);
+    /** @brief Remove by IMDb ID (preferred precise delete). */
+    bool removeByImdbId(const std::string& imdbID);
     /** @brief Return a copy of movies in the requested sort order. */
     std::vector<Movie> getMovies(SortOrder order = SortOrder::DEFAULT) const;
 

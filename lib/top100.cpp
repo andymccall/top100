@@ -33,6 +33,14 @@ void Top100::removeMovie(const std::string& title) {
     }), movies.end());
 }
 
+bool Top100::removeByImdbId(const std::string& imdbID) {
+    if (imdbID.empty()) return false;
+    auto it = std::remove_if(movies.begin(), movies.end(), [&](const Movie& m){ return m.imdbID == imdbID; });
+    if (it == movies.end()) return false;
+    movies.erase(it, movies.end());
+    return true;
+}
+
 std::vector<Movie> Top100::getMovies(SortOrder order) const {
     std::vector<Movie> sorted_movies = movies; // Create a copy to sort
 

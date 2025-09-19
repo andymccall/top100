@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //-------------------------------------------------------------------------------
+/*! \file lib/mastodon.cpp
+    \brief Mastodon client helpers (media upload and status posting).
+*/
 // Top100 — Your Personal Movie List
 //
 // File: lib/mastodon.cpp

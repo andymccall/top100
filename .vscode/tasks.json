@@ -500,9 +500,16 @@
 				"-lc",
 				"rm -rf build && cmake -S . -B build -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON -DTOP100_ENABLE_TESTS=ON && cmake --build build --parallel && cd build && ctest --output-on-failure"
 			],
-			"options": { "cwd": "${workspaceFolder}" },
-			"group": { "kind": "build", "isDefault": false },
-			"problemMatcher": ["$gcc"],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
 			"detail": "Cleans the build folder, configures with both UIs enabled and tests on, builds all, and runs the test suite."
 		},
 		{
@@ -521,6 +528,132 @@
 			"label": "Build after headers",
 			"type": "shell",
 			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Build (cmake)",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Configure (cmake)",
+			"type": "shell",
+			"command": "cmake -S . -B build -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build (cmake) 2",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build (cmake) 3",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after QML fix",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build (cmake) - after UI polish",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild Qt fix",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after capture fix",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after cleanup",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Full rebuild verify",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with Qt SSL diagnostics",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after poster QLabel tweaks",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with OMDb poster fallback",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with window sizing and poster label fix",
+			"type": "shell",
+			"command": "cmake --build build -j",
+			"problemMatcher": [
+				"$gcc"
+			],
 			"group": "build"
 		}
 	]

@@ -10,9 +10,13 @@
 // Date: September 18, 2025
 //-------------------------------------------------------------------------------
 //
-// Top100ListModel: Shared QAbstractListModel exposing movies to both Qt and KDE UIs.
-// Roles: title, year, rank, posterUrl, plotFull; also supports Qt::DisplayRole for convenience.
-// Provides reload(), get(row) for QML details binding, and async posting helpers.
+/*! \file ui/common/Top100ListModel.h
+    \brief Shared QAbstractListModel exposing movies to both Qt and KDE UIs.
+    
+    Roles: title, year, rank, posterUrl, plotFull, imdbID; also supports
+    Qt::DisplayRole for convenience. Provides reload(), get(row) for QML
+    details binding, OMDb-assisted add, delete by IMDb ID, and async posting.
+*/
 #pragma once
 
 #include <QAbstractListModel>
@@ -34,9 +38,11 @@
 #include "../../lib/top100.h"
 #include "../../lib/config.h"
 #include "../../lib/posting.h"
+#include "../../lib/omdb.h"
 
 class Top100ListModel : public QAbstractListModel {
     Q_OBJECT
+    Q_PROPERTY(int sortOrder READ sortOrder WRITE setSortOrder NOTIFY sortOrderChanged)
 public:
     /** Model data roles available to views and QML. */
     enum Roles {
@@ -44,13 +50,26 @@ public:
         YearRole,
         RankRole,
         PosterUrlRole,
-        PlotFullRole
+        PlotFullRole,
+        ImdbIdRole,
+        DirectorRole,
+        ActorsRole,
+        GenresRole,
+        RuntimeMinutesRole
     };
     Q_ENUM(Roles)
 
     /** Construct and immediately load the current Top100 dataset. */
     explicit Top100ListModel(QObject* parent = nullptr)
         : QAbstractListModel(parent) {
+        // Initialize sort order from config
+        try {
+            AppConfig cfg = loadConfig();
+            setSortOrder(cfg.uiSortOrder);
+        } catch (...) {
+            // fall back to default
+            currentOrder_ = SortOrder::DEFAULT;
+        }
         reload();
     }
 
@@ -73,6 +92,19 @@ public:
             case RankRole: return m.userRank;
             case PosterUrlRole: return QString::fromStdString(m.posterUrl);
             case PlotFullRole: return QString::fromStdString(m.plotFull);
+            case ImdbIdRole: return QString::fromStdString(m.imdbID);
+            case DirectorRole: return QString::fromStdString(m.director);
+            case ActorsRole: {
+                QStringList list;
+                for (const auto& a : m.actors) list << QString::fromStdString(a);
+                return list;
+            }
+            case GenresRole: {
+                QStringList list;
+                for (const auto& g : m.genres) list << QString::fromStdString(g);
+                return list;
+            }
+            case RuntimeMinutesRole: return m.runtimeMinutes;
             default: return {};
         }
     }
@@ -85,6 +117,11 @@ public:
         r[RankRole] = "rank";
         r[PosterUrlRole] = "posterUrl";
         r[PlotFullRole] = "plotFull";
+        r[ImdbIdRole] = "imdbID";
+    r[DirectorRole] = "director";
+    r[ActorsRole] = "actors";
+    r[GenresRole] = "genres";
+    r[RuntimeMinutesRole] = "runtimeMinutes";
         return r;
     }
 
@@ -95,14 +132,41 @@ public:
         try {
             AppConfig cfg = loadConfig();
             Top100 list(cfg.dataFile);
-            auto movies = list.getMovies(SortOrder::BY_USER_RANK);
-            if (movies.empty()) movies = list.getMovies(SortOrder::ALPHABETICAL);
+            // Load using current sort order (defaults to insertion order)
+            auto movies = list.getMovies(currentOrder_);
             movies_.assign(movies.begin(), movies.end());
         } catch (...) {
             movies_.clear();
         }
         endResetModel();
         qInfo() << "Top100ListModel: loaded" << movies_.size() << "movies";
+        emit reloadCompleted();
+    }
+
+    // Current sort order as int (maps to SortOrder enum). Useful for QML bindings.
+    int sortOrder() const { return static_cast<int>(currentOrder_); }
+
+    /** Set sort order (0..4) corresponding to SortOrder enum; triggers reload(). */
+    Q_INVOKABLE void setSortOrder(int order) {
+        SortOrder newOrder = currentOrder_;
+        switch (order) {
+            case static_cast<int>(SortOrder::DEFAULT): newOrder = SortOrder::DEFAULT; break;
+            case static_cast<int>(SortOrder::BY_YEAR): newOrder = SortOrder::BY_YEAR; break;
+            case static_cast<int>(SortOrder::ALPHABETICAL): newOrder = SortOrder::ALPHABETICAL; break;
+            case static_cast<int>(SortOrder::BY_USER_RANK): newOrder = SortOrder::BY_USER_RANK; break;
+            case static_cast<int>(SortOrder::BY_USER_SCORE): newOrder = SortOrder::BY_USER_SCORE; break;
+            default: newOrder = SortOrder::DEFAULT; break;
+        }
+        if (newOrder == currentOrder_) return;
+        currentOrder_ = newOrder;
+        // Persist preference
+        try {
+            AppConfig cfg = loadConfig();
+            cfg.uiSortOrder = static_cast<int>(currentOrder_);
+            saveConfig(cfg);
+        } catch (...) { /* ignore */ }
+        emit sortOrderChanged(static_cast<int>(currentOrder_));
+        reload();
     }
 
     /** Convenience accessor for QML/details panes. Returns a QVariantMap with keys:
@@ -116,7 +180,82 @@ public:
         m["rank"] = mv.userRank;
         m["posterUrl"] = QString::fromStdString(mv.posterUrl);
         m["plotFull"] = QString::fromStdString(mv.plotFull.empty() ? mv.plotShort : mv.plotFull);
+        m["imdbID"] = QString::fromStdString(mv.imdbID);
+        m["director"] = QString::fromStdString(mv.director);
+        {
+            QVariantList actors;
+            for (const auto& a : mv.actors) actors << QString::fromStdString(a);
+            m["actors"] = actors;
+        }
+        {
+            QVariantList genres;
+            for (const auto& g : mv.genres) genres << QString::fromStdString(g);
+            m["genres"] = genres;
+        }
+        m["runtimeMinutes"] = mv.runtimeMinutes;
         return m;
+    }
+
+    /** Add a movie by imdbID using OMDb lookup; appends to end of list and refreshes. */
+    Q_INVOKABLE bool addMovieByImdbId(const QString& imdbId) {
+        try {
+            AppConfig cfg = loadConfig();
+            if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) return false;
+            auto maybe = omdbGetById(cfg.omdbApiKey, imdbId.toStdString());
+            if (!maybe) return false;
+            Movie mv = *maybe;
+            // Ensure it's appended at the end by direct add (insertion order)
+            Top100 list(cfg.dataFile);
+            list.addMovie(mv);
+            list.recomputeRanks();
+            // Force persistence by destructing list (save in destructor)
+        } catch (...) { return false; }
+        reload();
+        return true;
+    }
+
+    /** Delete a movie by imdbID; refreshes list. */
+    Q_INVOKABLE bool deleteByImdbId(const QString& imdbId) {
+        try {
+            AppConfig cfg = loadConfig();
+            Top100 list(cfg.dataFile);
+            bool removed = list.removeByImdbId(imdbId.toStdString());
+            if (!removed) return false;
+            list.recomputeRanks();
+        } catch (...) { return false; }
+        reload();
+        return true;
+    }
+
+    /** Delete a movie by title (first match); refreshes list. */
+    Q_INVOKABLE bool deleteByTitle(const QString& title) {
+        try {
+            AppConfig cfg = loadConfig();
+            Top100 list(cfg.dataFile);
+            list.removeMovie(title.toStdString());
+        } catch (...) { return false; }
+        reload();
+        return true;
+    }
+
+    /** Search OMDb for a query and return a list of { title, year, imdbID } objects. */
+    Q_INVOKABLE QVariantList searchOmdb(const QString& query) {
+        QVariantList out;
+        try {
+            AppConfig cfg = loadConfig();
+            if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) return out;
+            auto results = omdbSearch(cfg.omdbApiKey, query.toStdString());
+            for (const auto& r : results) {
+                QVariantMap m;
+                m["title"] = QString::fromStdString(r.title);
+                m["year"] = r.year;
+                m["imdbID"] = QString::fromStdString(r.imdbID);
+                out.push_back(m);
+            }
+        } catch (...) {
+            // ignore, return empty
+        }
+        return out;
     }
 
     /** Post the selected movie to BlueSky synchronously. */
@@ -182,7 +321,12 @@ public:
 signals:
     /** Emitted when an async post finishes. */
     void postingFinished(const QString& service, int row, bool success);
+    /** Emitted when sort order changes (value matches SortOrder enum). */
+    void sortOrderChanged(int sortOrder);
+    /** Emitted after model reload finishes (for selection preservation). */
+    void reloadCompleted();
 
 private:
     std::vector<Movie> movies_;
+    SortOrder currentOrder_ = SortOrder::DEFAULT;
 };

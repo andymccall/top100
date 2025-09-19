@@ -55,6 +55,9 @@ struct AppConfig {
     bool        mastodonEnabled = false;  ///< Whether Mastodon posting is enabled
     std::string mastodonInstance;         ///< Instance base URL (e.g., https://mastodon.social)
     std::string mastodonAccessToken;      ///< User access token (keep private)
+
+    // UI preferences
+    int         uiSortOrder = 0;          ///< Persisted sort order (matches SortOrder enum values)
 };
 
 /**

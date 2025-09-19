@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //-------------------------------------------------------------------------------
+/*! \file lib/posting.cpp
+    \brief Compose post bodies and dispatch to social services with limits.
+*/
 // Top100 — Your Personal Movie List
 //
 // File: lib/posting.cpp

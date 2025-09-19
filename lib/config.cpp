@@ -54,6 +54,8 @@ static void to_json(json& j, const AppConfig& c) {
     j["mastodonEnabled"] = c.mastodonEnabled;
     if (!c.mastodonInstance.empty()) j["mastodonInstance"] = c.mastodonInstance;
     if (!c.mastodonAccessToken.empty()) j["mastodonAccessToken"] = c.mastodonAccessToken;
+    // UI prefs
+    j["uiSortOrder"] = c.uiSortOrder;
 }
 
 static void from_json(const json& j, AppConfig& c) {
@@ -72,6 +74,8 @@ static void from_json(const json& j, AppConfig& c) {
     c.mastodonEnabled = j.value("mastodonEnabled", false);
     c.mastodonInstance = j.value("mastodonInstance", std::string("https://mastodon.social"));
     c.mastodonAccessToken = j.value("mastodonAccessToken", std::string());
+    // UI prefs
+    c.uiSortOrder = j.value("uiSortOrder", 0);
 }
 
 AppConfig loadConfig() {
@@ -90,6 +94,7 @@ AppConfig loadConfig() {
         def.mastodonEnabled = false;
         def.mastodonInstance = "https://mastodon.social";
         def.mastodonAccessToken = "";
+    def.uiSortOrder = 0;
         saveConfig(def);
         return def;
     }

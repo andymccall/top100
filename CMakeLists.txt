@@ -73,7 +73,7 @@ target_include_directories(top100_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cli ${
 target_link_libraries(top100_cli PRIVATE top100 top100_config top100_config_utils cpr::cpr nlohmann_json::nlohmann_json top100_services)
 
 # Services (BlueSky + Mastodon) in a reusable library for UIs
-add_library(top100_services STATIC lib/bluesky.cpp lib/mastodon.cpp lib/posting.cpp)
+add_library(top100_services STATIC lib/bluesky.cpp lib/mastodon.cpp lib/posting.cpp lib/omdb.cpp)
 target_include_directories(top100_services PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_link_libraries(top100_services PUBLIC cpr::cpr nlohmann_json::nlohmann_json)
 
