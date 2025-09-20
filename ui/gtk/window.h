@@ -35,6 +35,7 @@ private:
     Glib::RefPtr<Gtk::AccelGroup> accel_group_;
     Gtk::Toolbar toolbar_;
     Gtk::Statusbar statusbar_;
+    guint status_ctx_movies_ { 0 };
     Gtk::Paned paned_{Gtk::ORIENTATION_HORIZONTAL};
 
     // Left pane
@@ -87,4 +88,5 @@ private:
     void on_update_current();
     void on_add_movie();
     static std::string join(const std::vector<std::string>& v, const std::string& sep);
+    void update_status_movie_count();
 };

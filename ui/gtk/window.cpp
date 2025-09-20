@@ -40,7 +40,9 @@ Top100GtkWindow::Top100GtkWindow()
     // Paned: left list, right details
     paned_.set_position(int(0.45 * kInitialWidth));
     main_box_.pack_start(paned_, Gtk::PACK_EXPAND_WIDGET);
+    // Statusbar at the bottom
     main_box_.pack_end(statusbar_, Gtk::PACK_SHRINK);
+    status_ctx_movies_ = statusbar_.get_context_id("movies");
 
     // Left side
     auto movies_heading = Gtk::manage(new Gtk::Label);
@@ -141,5 +143,13 @@ Top100GtkWindow::Top100GtkWindow()
     right_box_.signal_size_allocate().connect([this](Gtk::Allocation&){ update_poster_scaled(); });
 
     reload_model();
+    update_status_movie_count();
     show_all_children();
+}
+
+void Top100GtkWindow::update_status_movie_count() {
+    // Pop the previous message in this context (if any), then push new count
+    statusbar_.pop(status_ctx_movies_);
+    const auto n = static_cast<unsigned>(list_store_->children().size());
+    statusbar_.push(std::to_string(n) + (n == 1 ? " movie" : " movies"), status_ctx_movies_);
 }

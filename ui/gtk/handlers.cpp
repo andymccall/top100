@@ -69,6 +69,7 @@ void Top100GtkWindow::reload_model(const Glib::ustring& select_imdb) {
         }
     }
     if (!(sel && sel->get_selected()) && list_store_->children().size() > 0) sel->select(list_store_->children().begin());
+    update_status_movie_count();
 }
 
 void Top100GtkWindow::on_selection_changed() {
@@ -117,6 +118,7 @@ void Top100GtkWindow::on_delete_current() {
     Top100 list(cfg.dataFile);
     if (list.removeByImdbId(imdb)) { show_status("Deleted."); }
     reload_model();
+    update_status_movie_count();
 }
 
 void Top100GtkWindow::on_update_current() {
@@ -153,6 +155,7 @@ void Top100GtkWindow::on_add_movie() {
             list.recomputeRanks();
             show_status("Added movie");
             reload_model(imdb);
+            update_status_movie_count();
         } catch (...) { show_status("Error adding movie"); }
     } else if (resp == Gtk::RESPONSE_REJECT) {
         // Enter manually flow: prompt for IMDb ID and add directly
@@ -179,6 +182,7 @@ void Top100GtkWindow::on_add_movie() {
                 list.recomputeRanks();
                 show_status("Added movie");
                 reload_model(imdb);
+                update_status_movie_count();
             } catch (...) { show_status("Error adding movie"); }
         }
     }

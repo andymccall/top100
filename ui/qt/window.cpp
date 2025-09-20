@@ -105,6 +105,11 @@ Top100QtWindow::Top100QtWindow(QWidget* parent) : QMainWindow(parent) {
     buildLayout();
     buildMenuBar();
     buildToolbar();
+    // Status bar at bottom with movie count on the left
+    statusBar_ = new QStatusBar(this);
+    statusCountLabel_ = new QLabel(this);
+    statusBar_->addWidget(statusCountLabel_, 0);
+    setStatusBar(statusBar_);
     connectSignals();
 }
 
@@ -252,6 +257,12 @@ void Top100QtWindow::connectSignals() {
     connect(sortCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() { onSortChanged(); });
     connect(listView_->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex&, const QModelIndex&) { updateDetails(); });
     connect(model_, &Top100ListModel::reloadCompleted, this, [this]() { updateDetails(); });
+    // Keep status count updated
+    auto updateCountNow = [this]() { updateStatusMovieCount(); };
+    connect(model_, &Top100ListModel::modelReset, this, updateCountNow);
+    connect(model_, &Top100ListModel::rowsInserted, this, updateCountNow);
+    connect(model_, &Top100ListModel::rowsRemoved, this, updateCountNow);
+    connect(model_, &Top100ListModel::reloadCompleted, this, updateCountNow);
     connect(model_, &Top100ListModel::requestSelectRow, this, [this](int row){ if (row >= 0 && row < model_->rowCount()) listView_->setCurrentIndex(model_->index(row, 0)); });
     if (model_->rowCount() > 0) {
         listView_->setCurrentIndex(model_->index(0, 0));
@@ -264,4 +275,11 @@ void Top100QtWindow::connectSignals() {
     posterContainer_->installEventFilter(posterResizer_);
     detailsResizer_ = static_cast<QObject*>(new DetailsResizer(detailsContainer_, actorsValue_));
     detailsContainer_->installEventFilter(detailsResizer_);
+    updateStatusMovieCount();
+}
+
+void Top100QtWindow::updateStatusMovieCount() {
+    if (!statusCountLabel_ || !model_) return;
+    const int n = model_->rowCount();
+    statusCountLabel_->setText(QString::number(n) + (n == 1 ? " movie" : " movies"));
 }

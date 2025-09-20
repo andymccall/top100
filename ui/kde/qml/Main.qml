@@ -25,6 +25,8 @@ Kirigami.ApplicationWindow {
     width: Math.min(Screen.width, Math.round(Ui_InitWidth * 1.2))
     height: Math.min(Screen.height, Math.round(Ui_InitHeight * 1.2))
     visible: true
+    // Movie count propagated from the ListView so footer can access it
+    property int movieCount: 0
 
     // Header toolbar with primary actions
     header: ToolBar {
@@ -141,6 +143,20 @@ Kirigami.ApplicationWindow {
         ]
     }
 
+    // Footer status bar with left-aligned movie count
+    footer: ToolBar {
+        position: ToolBar.Footer
+        RowLayout {
+            anchors.fill: parent
+            spacing: Kirigami.Units.smallSpacing
+            Label {
+                text: window.movieCount + (window.movieCount === 1 ? qsTr(" movie") : qsTr(" movies"))
+                Layout.alignment: Qt.AlignLeft
+            }
+            Item { Layout.fillWidth: true } // spacer to keep count on the left
+        }
+    }
+
     Dialog {
         id: aboutDialog
         modal: true
@@ -207,8 +223,14 @@ Kirigami.ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         model: top100Model
-                        Component.onCompleted: { if (count > 0) currentIndex = 0 }
-                        onCountChanged: { if (currentIndex < 0 && count > 0) currentIndex = 0 }
+                        Component.onCompleted: {
+                            if (count > 0) currentIndex = 0
+                            window.movieCount = count
+                        }
+                        onCountChanged: {
+                            if (currentIndex < 0 && count > 0) currentIndex = 0
+                            window.movieCount = count
+                        }
                         delegate: Item {
                             width: ListView.view.width
                             height: label.implicitHeight + Kirigami.Units.smallSpacing * 2
@@ -414,7 +436,7 @@ Kirigami.ApplicationWindow {
                 TextField {
                     id: queryField
                     Layout.fillWidth: true
-                    placeholderText: qsTr("Title keyword")
+                    placeholderText: qsTr("title keyword")
                     onAccepted: searchBtn.clicked()
                 }
                 Button {
@@ -499,7 +521,25 @@ Kirigami.ApplicationWindow {
             RowLayout {
                 Layout.alignment: Qt.AlignRight
                 spacing: Kirigami.Units.smallSpacing
-                Button { text: qsTr("Enter manually"); onClicked: { window.showPassiveNotification(qsTr("Manual entry is not wired yet.")); addDialog.close() } }
+                Button {
+                    text: qsTr("Enter manually")
+                    onClicked: {
+                        var dialog = Qt.createQmlObject('
+                            import QtQuick 2.15; import QtQuick.Controls 2.15; import org.kde.kirigami 2.20 as Kirigami; Dialog { id: d; modal: true; title: "Add Movie by IMDb ID"; standardButtons: Dialog.Ok | Dialog.Cancel; property string imdb: ""; contentItem: Column { spacing: 8; Label { text: "Enter IMDb ID (e.g., tt0133093):" } TextField { id: tf; placeholderText: "tt........"; onAccepted: d.accept(); onTextChanged: d.imdb = text } } }
+                        ', window, "ManualAddDialog")
+                        dialog.accepted.connect(function() {
+                            if (dialog.imdb && dialog.imdb.length > 0) {
+                                if (top100Model.addMovieByImdbId(dialog.imdb)) {
+                                    window.showPassiveNotification(qsTr("Movie added."))
+                                } else {
+                                    window.showPassiveNotification(qsTr("Add failed."))
+                                }
+                            }
+                        })
+                        dialog.open()
+                        addDialog.close()
+                    }
+                }
                 Button { text: qsTr("Cancel"); onClicked: addDialog.close() }
                 Button {
                     text: qsTr("Add")

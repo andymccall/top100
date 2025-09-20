@@ -44,6 +44,8 @@ private:
     QWidget* posterContainer_ = nullptr;  // for poster scaling
     QTextBrowser* plotView_ = nullptr;
     QToolBar* toolbar_ = nullptr;
+    QStatusBar* statusBar_ = nullptr;
+    QLabel* statusCountLabel_ = nullptr;
 
     // Actions
     QAction* addAct_ = nullptr;
@@ -63,6 +65,7 @@ private:
     void buildMenuBar();
     void buildToolbar();
     void connectSignals();
+    void updateStatusMovieCount();
 
     // Handlers (implemented in handlers.cpp)
     void onAddMovie();
