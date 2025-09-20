@@ -244,39 +244,7 @@ void Top100QtWindow::buildLayout() {
     resize(w, h);
 }
 
-void Top100QtWindow::buildMenuBar() {
-    QMenuBar *menuBar = this->menuBar();
-    QMenu *fileMenu = menuBar->addMenu(QString::fromUtf8(kMenuFile));
-    QAction *refreshAct = fileMenu->addAction(QStringLiteral("Refresh"));
-    connect(refreshAct, &QAction::triggered, this, [this]() { onRefresh(); });
-    QAction *quitAct = fileMenu->addAction(QString::fromUtf8(kActionQuit));
-    connect(quitAct, &QAction::triggered, qApp, &QCoreApplication::quit);
-
-    QMenu *sortTopMenu = menuBar->addMenu(QStringLiteral("Sort"));
-    sortTopMenu->addAction(QString::fromUtf8(kSortInsertion), this, [this]() { sortCombo_->setCurrentIndex(0); onSortChanged(); });
-    sortTopMenu->addAction(QString::fromUtf8(kSortByYear), this, [this]() { sortCombo_->setCurrentIndex(1); onSortChanged(); });
-    sortTopMenu->addAction(QString::fromUtf8(kSortAlpha), this, [this]() { sortCombo_->setCurrentIndex(2); onSortChanged(); });
-    sortTopMenu->addAction(QString::fromUtf8(kSortByRank), this, [this]() { sortCombo_->setCurrentIndex(3); onSortChanged(); });
-    sortTopMenu->addAction(QString::fromUtf8(kSortByScore), this, [this]() { sortCombo_->setCurrentIndex(4); onSortChanged(); });
-
-    QMenu *helpMenu = menuBar->addMenu(QString::fromUtf8(kMenuHelp));
-    QAction *aboutAct = helpMenu->addAction(QString::fromUtf8(kActionAbout));
-    connect(aboutAct, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, QString::fromUtf8(kActionAbout), QString::fromUtf8(kAboutDialogText));
-    });
-}
-
-void Top100QtWindow::buildToolbar() {
-    toolbar_ = new QToolBar(this);
-    addToolBar(Qt::TopToolBarArea, toolbar_);
-    toolbar_->setIconSize(QSize(18, 18));
-    addAct_ = toolbar_->addAction(QIcon::fromTheme("list-add"), QStringLiteral("Add"));
-    delAct_ = toolbar_->addAction(QIcon::fromTheme("edit-delete"), QStringLiteral("Delete"));
-    refreshTbAct_ = toolbar_->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Refresh"));
-    postBskyAct_ = toolbar_->addAction(QIcon::fromTheme("cloud-upload"), QStringLiteral("Post BlueSky"));
-    postMastoAct_ = toolbar_->addAction(QIcon::fromTheme("mail-send"), QStringLiteral("Post Mastodon"));
-    updateAct_ = toolbar_->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Update (OMDb)"));
-}
+// buildMenuBar and buildToolbar moved to menu.cpp and toolbar.cpp
 
 void Top100QtWindow::connectSignals() {
     // Model and selection behavior
@@ -289,14 +257,6 @@ void Top100QtWindow::connectSignals() {
         listView_->setCurrentIndex(model_->index(0, 0));
         updateDetails();
     }
-
-    // Toolbar actions
-    connect(addAct_, &QAction::triggered, this, [this]() { onAddMovie(); });
-    connect(delAct_, &QAction::triggered, this, [this]() { onDeleteCurrent(); });
-    connect(refreshTbAct_, &QAction::triggered, this, [this]() { onRefresh(); });
-    connect(postBskyAct_, &QAction::triggered, this, [this]() { onPostBlueSky(); });
-    connect(postMastoAct_, &QAction::triggered, this, [this]() { onPostMastodon(); });
-    connect(updateAct_, &QAction::triggered, this, [this]() { onUpdateFromOmdb(); });
 
     // Network for poster loading and resizers
     nam_ = new QNetworkAccessManager(this);

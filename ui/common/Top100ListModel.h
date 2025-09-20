@@ -257,6 +257,27 @@ public:
         }
         return out;
     }
+
+    /** Fetch full OMDb details by IMDb ID and return a QVariantMap with keys:
+     *  title, year, posterUrl, plotShort, plotFull. Returns empty map on error. */
+    Q_INVOKABLE QVariantMap omdbGetByIdMap(const QString& imdbId) const {
+        QVariantMap m;
+        try {
+            AppConfig cfg = loadConfig();
+            if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) return m;
+            auto maybe = omdbGetById(cfg.omdbApiKey, imdbId.toStdString());
+            if (!maybe) return m;
+            const Movie& mv = *maybe;
+            m["title"] = QString::fromStdString(mv.title);
+            m["year"] = mv.year;
+            m["posterUrl"] = QString::fromStdString(mv.posterUrl);
+            m["plotShort"] = QString::fromStdString(mv.plotShort);
+            m["plotFull"] = QString::fromStdString(mv.plotFull);
+        } catch (...) {
+            // ignore
+        }
+        return m;
+    }
     /** Update an existing movie by IMDb ID from OMDb and refresh. */
     Q_INVOKABLE bool updateFromOmdbByImdbId(const QString& imdbId) {
         try {

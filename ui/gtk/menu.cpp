@@ -19,6 +19,11 @@ void Top100GtkWindow::build_menubar() {
     menubar_.append(*file_item);
     file_item->set_submenu(*file_menu);
 
+    // Add Movie
+    auto add_item = Gtk::manage(new Gtk::MenuItem("Add Movie"));
+    file_menu->append(*add_item);
+    add_item->signal_activate().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_add_movie));
+
     auto quit_item = Gtk::manage(new Gtk::MenuItem(kActionQuit));
     file_menu->append(*quit_item);
     quit_item->signal_activate().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_menu_quit));

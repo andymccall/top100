@@ -26,7 +26,7 @@ Kirigami.ApplicationWindow {
     height: Math.min(Screen.height, Math.round(Ui_InitHeight * 1.2))
     visible: true
 
-    // Simple header toolbar with primary actions (Qt Quick Controls)
+    // Header toolbar with primary actions
     header: ToolBar {
         position: ToolBar.Header
         RowLayout {
@@ -38,8 +38,6 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
-                ToolTip.visible: hovered
-                ToolTip.text: text
                 onClicked: addDialog.open()
             }
             ToolButton {
@@ -48,8 +46,6 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
-                ToolTip.visible: hovered
-                ToolTip.text: text
                 onClicked: openDeleteDialog()
             }
             ToolButton {
@@ -58,8 +54,6 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
-                ToolTip.visible: hovered
-                ToolTip.text: text
                 onClicked: top100Model.reload()
             }
             ToolButton {
@@ -68,8 +62,6 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
-                ToolTip.visible: hovered
-                ToolTip.text: text
                 onClicked: {
                     if (list.currentIndex < 0) { window.showPassiveNotification(qsTr("Select a movie first.")); return }
                     var info = top100Model.get(list.currentIndex)
@@ -79,7 +71,6 @@ Kirigami.ApplicationWindow {
                     if (!ok) {
                         window.showPassiveNotification(qsTr("Update failed."))
                     } else {
-                        // Show a toast when reload completes
                         var once = function() {
                             top100Model.reloadCompleted.disconnect(once)
                             window.showPassiveNotification(qsTr("Updated from OMDb."))
@@ -94,8 +85,6 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
-                ToolTip.visible: hovered
-                ToolTip.text: text
                 onClicked: postSelectedToBlueSky()
             }
             ToolButton {
@@ -104,8 +93,6 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
-                ToolTip.visible: hovered
-                ToolTip.text: text
                 onClicked: postSelectedToMastodon()
             }
         }
@@ -115,32 +102,38 @@ Kirigami.ApplicationWindow {
         actions: [
             Kirigami.Action {
                 text: UiStrings_MenuFile
+                tooltip: ""
                 children: [
                     Kirigami.Action {
                         text: qsTr("Refresh")
+                        tooltip: ""
                         onTriggered: top100Model.reload()
                     },
                     Kirigami.Action {
                         text: UiStrings_ActionQuit
+                        tooltip: ""
                         onTriggered: Qt.quit()
                     }
                 ]
             },
             Kirigami.Action {
                 text: qsTr("Sort")
+                tooltip: ""
                 children: [
-                    Kirigami.Action { text: qsTr("Insertion order"); onTriggered: top100Model.setSortOrder(0) },
-                    Kirigami.Action { text: qsTr("By year"); onTriggered: top100Model.setSortOrder(1) },
-                    Kirigami.Action { text: qsTr("Alphabetical"); onTriggered: top100Model.setSortOrder(2) },
-                    Kirigami.Action { text: qsTr("By my rank"); onTriggered: top100Model.setSortOrder(3) },
-                    Kirigami.Action { text: qsTr("By my score"); onTriggered: top100Model.setSortOrder(4) }
+                    Kirigami.Action { text: qsTr("Insertion order"); tooltip: ""; onTriggered: top100Model.setSortOrder(0) },
+                    Kirigami.Action { text: qsTr("By year"); tooltip: ""; onTriggered: top100Model.setSortOrder(1) },
+                    Kirigami.Action { text: qsTr("Alphabetical"); tooltip: ""; onTriggered: top100Model.setSortOrder(2) },
+                    Kirigami.Action { text: qsTr("By my rank"); tooltip: ""; onTriggered: top100Model.setSortOrder(3) },
+                    Kirigami.Action { text: qsTr("By my score"); tooltip: ""; onTriggered: top100Model.setSortOrder(4) }
                 ]
             },
             Kirigami.Action {
                 text: UiStrings_MenuHelp
+                tooltip: ""
                 children: [
                     Kirigami.Action {
                         text: UiStrings_ActionAbout
+                        tooltip: ""
                         onTriggered: aboutDialog.open()
                     }
                 ]
@@ -151,6 +144,7 @@ Kirigami.ApplicationWindow {
     Dialog {
         id: aboutDialog
         modal: true
+        width: Math.min(Kirigami.Units.gridUnit * 40, window.width * 0.6)
         title: UiStrings_ActionAbout
         standardButtons: Dialog.Ok
         contentItem: Column {
@@ -393,36 +387,7 @@ Kirigami.ApplicationWindow {
         }
     }
     
-    Dialog {
-        id: resultsDialog
-        modal: true
-        title: qsTr("Select Movie")
-        standardButtons: Dialog.Cancel
-        property var selectedImdb: ""
-        contentItem: ListView {
-            id: resultsList
-            width: 400; height: 300
-            model: selectionModel.results
-            delegate: ItemDelegate {
-                width: parent.width
-                text: (modelData.title + " (" + modelData.year + ") [" + modelData.imdbID + "]")
-                onClicked: {
-                    resultsDialog.selectedImdb = modelData.imdbID
-                    resultsDialog.accept()
-                }
-            }
-        }
-        onAccepted: {
-            if (selectedImdb && selectedImdb.length > 0) {
-                if (top100Model.addMovieByImdbId(selectedImdb)) {
-                    window.showPassiveNotification(qsTr("Movie added."))
-                } else {
-                    window.showPassiveNotification(qsTr("Add failed."))
-                }
-            }
-            selectedImdb = ""
-        }
-    }
+    // (removed) legacy resultsDialog; integrated selection occurs in addDialog
 
     QtObject {
         id: selectionModel
@@ -433,25 +398,132 @@ Kirigami.ApplicationWindow {
         id: addDialog
         modal: true
         title: qsTr("Add Movie (OMDb)")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        contentItem: Column {
+        width: window.width * 0.5
+        height: window.height * 0.6
+        x: (window.width - width) / 2
+        y: (window.height - height) / 2
+        standardButtons: Dialog.NoButton
+        property var selected: null
+        onVisibleChanged: if (visible) { x = (window.width - width)/2; y = (window.height - height)/2 }
+        contentItem: ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
-            TextField { id: queryField; placeholderText: qsTr("Title keyword") }
-            Button { text: qsTr("Enter manually (not wired)"); onClicked: { window.showPassiveNotification(qsTr("Manual entry is not wired yet.")); addDialog.close() } }
-        }
-        onAccepted: {
-            var q = queryField.text
-            if (!q || q.trim().length === 0) return
-            var results = top100Model.searchOmdb(q)
-            if (!results || results.length === 0) { window.showPassiveNotification(qsTr("No results.")); return }
-            selectionModel.results = results
-            resultsDialog.open()
+            // Search row
+            RowLayout {
+                spacing: Kirigami.Units.smallSpacing
+                Label { text: qsTr("Search for movie"); Layout.alignment: Qt.AlignVCenter }
+                TextField {
+                    id: queryField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("Title keyword")
+                    onAccepted: searchBtn.clicked()
+                }
+                Button {
+                    id: searchBtn
+                    text: qsTr("Search")
+                    highlighted: true
+                    focus: true
+                    onClicked: {
+                        var q = queryField.text
+                        if (!q || q.trim().length === 0) return
+                        var results = top100Model.searchOmdb(q)
+                        if (!results || results.length === 0) { window.showPassiveNotification(qsTr("No results.")); return }
+                        selectionModel.results = results
+                        resultsList.currentIndex = 0
+                    }
+                }
+            }
+
+            // Content split: results list on left, preview on right
+            SplitView {
+                id: addSplit
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                orientation: Qt.Horizontal
+                // Results
+                ListView {
+                    id: resultsList
+                    SplitView.preferredWidth: parent.width * 0.4
+                    model: selectionModel.results
+                    delegate: ItemDelegate {
+                        width: parent.width
+                        text: (modelData.title + " (" + modelData.year + ") [" + modelData.imdbID + "]")
+                        onClicked: resultsList.currentIndex = index
+                    }
+                    onCurrentIndexChanged: {
+                        if (currentIndex >= 0 && model && model.length > currentIndex) {
+                            var imdb = model[currentIndex].imdbID
+                            addDialog.selected = top100Model.omdbGetByIdMap(imdb)
+                        } else {
+                            addDialog.selected = null
+                        }
+                    }
+                }
+                // Preview panel
+                Flickable {
+                    SplitView.preferredWidth: parent.width * 0.6
+                    contentWidth: width
+                    contentHeight: previewCol.implicitHeight
+                    clip: true
+                    ColumnLayout {
+                        id: previewCol
+                        width: parent.width
+                        spacing: Kirigami.Units.smallSpacing
+                        Kirigami.Heading {
+                            level: 3
+                            text: addDialog.selected ? ((addDialog.selected.title || "") + (addDialog.selected.year ? (" (" + addDialog.selected.year + ")") : "")) : ""
+                            visible: !!addDialog.selected
+                        }
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 220
+                            Image {
+                                anchors.centerIn: parent
+                                width: parent.width * Ui_PosterMaxWidthRatio
+                                height: parent.height * Ui_PosterMaxHeightRatio
+                                fillMode: Image.PreserveAspectFit
+                                source: (addDialog.selected && addDialog.selected.posterUrl) ? addDialog.selected.posterUrl : ""
+                                visible: source !== "" && status === Image.Ready
+                            }
+                        }
+                        Text {
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            text: addDialog.selected ? ((addDialog.selected.plotShort && addDialog.selected.plotShort.length > 0) ? addDialog.selected.plotShort : (addDialog.selected.plotFull || "")) : ""
+                            visible: !!addDialog.selected
+                        }
+                    }
+                }
+            }
+
+            // Buttons row
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: Kirigami.Units.smallSpacing
+                Button { text: qsTr("Enter manually"); onClicked: { window.showPassiveNotification(qsTr("Manual entry is not wired yet.")); addDialog.close() } }
+                Button { text: qsTr("Cancel"); onClicked: addDialog.close() }
+                Button {
+                    text: qsTr("Add")
+                    enabled: addDialog.selected && addDialog.selected.title && addDialog.selected.year
+                    onClicked: {
+                        if (resultsList.currentIndex >= 0) {
+                            var imdbSel = selectionModel.results[resultsList.currentIndex].imdbID
+                            if (top100Model.addMovieByImdbId(imdbSel)) {
+                                window.showPassiveNotification(qsTr("Movie added."))
+                                addDialog.close()
+                            } else {
+                                window.showPassiveNotification(qsTr("Add failed."))
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     Dialog {
         id: deleteDialog
         modal: true
+        width: Math.min(420, window.width * 0.6)
         property string imdbID: ""
         property string titleText: ""
         title: qsTr("Delete Movie")

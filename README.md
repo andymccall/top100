@@ -79,21 +79,24 @@ If you use VS Code, this repo includes `.vscode/tasks.json` with handy tasks. In
 You can run it via Terminal > Run Task… (or Ctrl/Cmd+Shift+P → “Run Task”).
 
 
-## �️ Optional UI frontends
+## 🖼️ Optional UI frontends
 
 In addition to the CLI, you can build optional desktop UIs:
 
 - Qt (cross‑platform) UI — Widgets‑based, no KDE dependencies
+- GTK UI — gtkmm 3 (GNOME‑friendly) with the same two‑pane layout and Add dialog
 - KDE UI — Kirigami/QML frontend with KDE Frameworks integration
 
-Both are disabled by default. Enable with CMake options:
+All UIs are disabled by default. Enable with CMake options:
 
 - `-DTOP100_UI_QT=ON` to build `top100_qt`
+- `-DTOP100_UI_GTK=ON` to build `top100_gtk`
 - `-DTOP100_UI_KDE=ON` to build `top100_kde`
 
 Dependencies:
 
 - Qt UI: Qt 5 (Widgets) or Qt 6 (Widgets)
+- GTK UI: gtkmm 3.0 (via pkg‑config)
 - KDE UI: Qt Quick/QML (5 or 6) and Kirigami2 from KDE Frameworks (KF5 or KF6)
 
 Example build (out‑of‑tree):
@@ -106,13 +109,18 @@ cmake --build build --target top100_qt
 # KDE UI (Kirigami)
 cmake -S . -B build -DTOP100_UI_KDE=ON
 cmake --build build --target top100_kde
+
+# GTK UI (gtkmm 3)
+cmake -S . -B build -DTOP100_UI_GTK=ON
+cmake --build build --target top100_gtk
 ```
 
 If both are enabled, both executables are built. The UIs link the same core libraries; we’ll progressively wire features without duplicating logic.
 
-Consistent UI strings:
+Consistent UI strings and behavior:
 - Both UIs read common display text (app names, window titles, hello text) from `ui/common/strings.h` so wording stays in sync.
 - A unit test named `ui_strings_constants` verifies these constants.
+- The Add dialog UX is kept in parity across Qt/GTK/KDE: a larger centered window titled “Add Movie (OMDb)” with a search row (label, entry with placeholder “title keyword”, and Search button), results list on the left, and details (title/year/poster/plot) on the right. Bottom row has Enter manually, Cancel, Add (Add is default).
 
 
 ## �🖥️ CLI usage

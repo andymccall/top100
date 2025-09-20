@@ -7,6 +7,8 @@
 //-------------------------------------------------------------------------------
 #include "handlers.h"
 
+#include "adddialog.h"
+
 #include <sstream>
 
 #include "../../lib/top100.h"
@@ -136,19 +138,11 @@ void Top100GtkWindow::on_update_current() {
 }
 
 void Top100GtkWindow::on_add_movie() {
-    Gtk::Dialog dialog("Add Movie by IMDb ID", *this);
-    dialog.add_button("Cancel", Gtk::RESPONSE_CANCEL);
-    dialog.add_button("Add", Gtk::RESPONSE_OK);
-    Gtk::Box* box = dialog.get_content_area();
-    Gtk::Label prompt("Enter IMDb ID (e.g., tt0133093):");
-    Gtk::Entry entry;
-    entry.set_placeholder_text("tt........");
-    box->pack_start(prompt, Gtk::PACK_SHRINK);
-    box->pack_start(entry, Gtk::PACK_SHRINK);
-    dialog.show_all_children();
-    if (dialog.run() == Gtk::RESPONSE_OK) {
-        auto imdb = entry.get_text();
-        if (imdb.empty()) { show_status("No IMDb ID entered"); return; }
+    Top100GtkAddDialog dlg(*this);
+    int resp = dlg.run();
+    if (resp == Gtk::RESPONSE_OK) {
+        auto imdb = dlg.selected_imdb();
+        if (imdb.empty()) { show_status("No selection"); return; }
         try {
             AppConfig cfg = loadConfig();
             if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) { show_status("OMDb not configured"); return; }
@@ -159,8 +153,33 @@ void Top100GtkWindow::on_add_movie() {
             list.recomputeRanks();
             show_status("Added movie");
             reload_model(imdb);
-        } catch (...) {
-            show_status("Error adding movie");
+        } catch (...) { show_status("Error adding movie"); }
+    } else if (resp == Gtk::RESPONSE_REJECT) {
+        // Enter manually flow: prompt for IMDb ID and add directly
+        Gtk::Dialog dialog("Add Movie by IMDb ID", *this);
+        dialog.add_button("Cancel", Gtk::RESPONSE_CANCEL);
+        dialog.add_button("Add", Gtk::RESPONSE_OK);
+        Gtk::Box* box = dialog.get_content_area();
+        Gtk::Label prompt("Enter IMDb ID (e.g., tt0133093):");
+        Gtk::Entry entry;
+        entry.set_placeholder_text("tt........");
+        box->pack_start(prompt, Gtk::PACK_SHRINK);
+        box->pack_start(entry, Gtk::PACK_SHRINK);
+        dialog.show_all_children();
+        if (dialog.run() == Gtk::RESPONSE_OK) {
+            auto imdb = entry.get_text();
+            if (imdb.empty()) { show_status("No IMDb ID entered"); return; }
+            try {
+                AppConfig cfg = loadConfig();
+                if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) { show_status("OMDb not configured"); return; }
+                auto maybe = omdbGetById(cfg.omdbApiKey, imdb);
+                if (!maybe) { show_status("OMDb fetch failed"); return; }
+                Top100 list(cfg.dataFile);
+                list.addMovie(*maybe);
+                list.recomputeRanks();
+                show_status("Added movie");
+                reload_model(imdb);
+            } catch (...) { show_status("Error adding movie"); }
         }
     }
 }

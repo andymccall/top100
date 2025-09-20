@@ -5,7 +5,8 @@
 //-------------------------------------------------------------------------------
 #include "handlers.h"
 
-#include <QInputDialog>
+#include "adddialog.h"
+
 #include <QMessageBox>
 #include <QListView>
 #include <QComboBox>
@@ -16,7 +17,6 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUrl>
-#include <QtConcurrent>
 
 #include "../common/Top100ListModel.h"
 #include "../../lib/config.h"
@@ -79,40 +79,16 @@ void Top100QtWindow::updateDetails() {
 }
 
 void Top100QtWindow::onAddMovie() {
-    QMessageBox::StandardButton choice = QMessageBox::question(
-        this,
-        QStringLiteral("Add Movie"),
-        QStringLiteral("Search OMDb for a movie?\nChoose No to enter manually (not wired yet)."),
-        QMessageBox::Yes|QMessageBox::No,
-        QMessageBox::Yes);
-    if (choice == QMessageBox::No) {
-        QMessageBox::information(this, QStringLiteral("Manual Entry"), QStringLiteral("Manual entry is not wired yet."));
-        return;
-    }
-    bool ok = false;
-    QString query = QInputDialog::getText(this, QStringLiteral("OMDb Search"), QStringLiteral("Title keyword:"), QLineEdit::Normal, QString(), &ok);
-    if (!ok || query.trimmed().isEmpty()) return;
-    try {
-        AppConfig cfg = loadConfig();
-        if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) { QMessageBox::warning(this, QStringLiteral("OMDb"), QStringLiteral("OMDb is not enabled or API key missing in config.")); return; }
-        auto results = omdbSearch(cfg.omdbApiKey, query.toStdString());
-        if (results.empty()) { QMessageBox::information(this, QStringLiteral("OMDb"), QStringLiteral("No results.")); return; }
-        QStringList items;
-        for (const auto& r : results) items << QString::fromStdString(r.title + " (" + std::to_string(r.year) + ") [" + r.imdbID + "]");
-        bool okSel = false;
-        QString sel = QInputDialog::getItem(this, QStringLiteral("Select Movie"), QStringLiteral("Results:"), items, 0, false, &okSel);
-        if (!okSel) return;
-        int l = sel.lastIndexOf('['); int r = sel.lastIndexOf(']');
-        if (l >= 0 && r > l) {
-            QString imdb = sel.mid(l+1, r-l-1);
+    Top100QtAddDialog dlg(this, model_);
+    if (dlg.exec() == QDialog::Accepted) {
+        const QString imdb = dlg.selectedImdb();
+        if (!imdb.isEmpty()) {
             if (model_->addMovieByImdbId(imdb)) {
                 statusBar()->showMessage(QStringLiteral("Added movie."), 3000);
             } else {
-                QMessageBox::warning(this, QStringLiteral("Add Failed"), QStringLiteral("Could not add movie."));
+                QMessageBox::warning(this, QStringLiteral("Add Failed"), QStringLiteral("Could not add movie (check OMDb config)."));
             }
         }
-    } catch (...) {
-        QMessageBox::warning(this, QStringLiteral("Error"), QStringLiteral("Unexpected error during OMDb search."));
     }
 }
 
