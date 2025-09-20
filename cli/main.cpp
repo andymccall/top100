@@ -40,7 +40,7 @@ int main()
     displayMenu(cfg.omdbEnabled, cfg.blueSkyEnabled, cfg.mastodonEnabled);
         std::cin >> input;
 
-        switch (input)
+    switch (input)
         {
         case '1':
             addMovie(top100);
@@ -94,6 +94,28 @@ int main()
             break;
         case '7':
             compareMovies(top100);
+            break;
+        case 'u':
+            if (cfg.omdbEnabled) {
+                std::cout << "Enter IMDb ID to update (e.g., tt1375666): ";
+                std::string imdb; std::cin >> imdb;
+                try {
+                    auto maybe = omdbGetById(cfg.omdbApiKey, imdb);
+                    if (!maybe) {
+                        std::cout << "Not found on OMDb.\n";
+                    } else {
+                        bool ok = top100.mergeFromOmdbByImdbId(*maybe);
+                        if (ok) {
+                            top100.recomputeRanks();
+                            std::cout << "Movie updated from OMDb.\n";
+                        } else {
+                            std::cout << "Movie with that IMDb ID not found in your list.\n";
+                        }
+                    }
+                } catch (...) {
+                    std::cout << "Update failed due to an error.\n";
+                }
+            }
             break;
         case '8':
             if (cfg.blueSkyEnabled) {

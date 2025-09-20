@@ -145,3 +145,35 @@ void Top100::recomputeRanks() {
         movies[idx[k]].userRank = rank++;
     }
 }
+
+bool Top100::mergeFromOmdbByImdbId(const Movie& omdbMovie) {
+    if (omdbMovie.imdbID.empty()) return false;
+    int idx = findIndexByImdbId(omdbMovie.imdbID);
+    if (idx < 0) return false;
+    Movie& dest = movies[static_cast<size_t>(idx)];
+    // Preserve ranking fields
+    double score = dest.userScore;
+    int rank = dest.userRank;
+    // Overwrite metadata fields from OMDb payload
+    dest.title = omdbMovie.title;
+    dest.year = omdbMovie.year;
+    dest.director = omdbMovie.director;
+    dest.plotShort = omdbMovie.plotShort;
+    dest.plotFull = omdbMovie.plotFull;
+    dest.actors = omdbMovie.actors;
+    dest.genres = omdbMovie.genres;
+    dest.runtimeMinutes = omdbMovie.runtimeMinutes;
+    dest.countries = omdbMovie.countries;
+    dest.posterUrl = omdbMovie.posterUrl;
+    dest.imdbRating = omdbMovie.imdbRating;
+    dest.metascore = omdbMovie.metascore;
+    dest.rottenTomatoes = omdbMovie.rottenTomatoes;
+    dest.source = omdbMovie.source.empty() ? dest.source : omdbMovie.source;
+    dest.imdbID = omdbMovie.imdbID; // same id
+    // Restore ranking
+    dest.userScore = score;
+    dest.userRank = rank;
+    // Save immediately
+    save();
+    return true;
+}

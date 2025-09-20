@@ -28,14 +28,86 @@ Kirigami.ApplicationWindow {
 
     // Simple header toolbar with primary actions (Qt Quick Controls)
     header: ToolBar {
+        position: ToolBar.Header
         RowLayout {
             anchors.fill: parent
             spacing: Kirigami.Units.smallSpacing
-            ToolButton { icon.name: "list-add"; text: qsTr("Add"); onClicked: addDialog.open() }
-            ToolButton { icon.name: "edit-delete"; text: qsTr("Delete"); onClicked: openDeleteDialog() }
-            ToolButton { icon.name: "view-refresh"; text: qsTr("Refresh"); onClicked: top100Model.reload() }
-            ToolButton { icon.name: "cloud-upload"; text: qsTr("Post BlueSky"); onClicked: postSelectedToBlueSky() }
-            ToolButton { icon.name: "mail-send"; text: qsTr("Post Mastodon"); onClicked: postSelectedToMastodon() }
+            ToolButton {
+                icon.name: "list-add"
+                text: qsTr("Add")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                ToolTip.visible: hovered
+                ToolTip.text: text
+                onClicked: addDialog.open()
+            }
+            ToolButton {
+                icon.name: "edit-delete"
+                text: qsTr("Delete")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                ToolTip.visible: hovered
+                ToolTip.text: text
+                onClicked: openDeleteDialog()
+            }
+            ToolButton {
+                icon.name: "view-refresh"
+                text: qsTr("Refresh")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                ToolTip.visible: hovered
+                ToolTip.text: text
+                onClicked: top100Model.reload()
+            }
+            ToolButton {
+                icon.name: "document-save"
+                text: qsTr("Update (OMDb)")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                ToolTip.visible: hovered
+                ToolTip.text: text
+                onClicked: {
+                    if (list.currentIndex < 0) { window.showPassiveNotification(qsTr("Select a movie first.")); return }
+                    var info = top100Model.get(list.currentIndex)
+                    if (!info || !info.imdbID || info.imdbID.length === 0) { window.showPassiveNotification(qsTr("No IMDb ID for this movie.")); return }
+                    window.showPassiveNotification(qsTr("Updating from OMDb..."))
+                    var ok = top100Model.updateFromOmdbByImdbId(info.imdbID)
+                    if (!ok) {
+                        window.showPassiveNotification(qsTr("Update failed."))
+                    } else {
+                        // Show a toast when reload completes
+                        var once = function() {
+                            top100Model.reloadCompleted.disconnect(once)
+                            window.showPassiveNotification(qsTr("Updated from OMDb."))
+                        }
+                        top100Model.reloadCompleted.connect(once)
+                    }
+                }
+            }
+            ToolButton {
+                icon.name: "cloud-upload"
+                text: qsTr("Post BlueSky")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                ToolTip.visible: hovered
+                ToolTip.text: text
+                onClicked: postSelectedToBlueSky()
+            }
+            ToolButton {
+                icon.name: "mail-send"
+                text: qsTr("Post Mastodon")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                ToolTip.visible: hovered
+                ToolTip.text: text
+                onClicked: postSelectedToMastodon()
+            }
         }
     }
 
@@ -307,6 +379,17 @@ Kirigami.ApplicationWindow {
         function onPostingFinished(service, row, success) {
             var msg = (success ? qsTr("Posted to ") : qsTr("Posting failed: ")) + service
             window.showPassiveNotification(msg)
+        }
+        function onRequestSelectRow(row) {
+            list.currentIndex = row
+        }
+        function onReloadCompleted() {
+            // Nudge selection to refresh bound details when index stays the same
+            if (list.currentIndex >= 0) {
+                var idx = list.currentIndex
+                list.currentIndex = -1
+                list.currentIndex = idx
+            }
         }
     }
     

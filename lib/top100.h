@@ -63,6 +63,14 @@ public:
     /** @brief Update movie at index; returns false if index invalid. */
     bool updateMovie(size_t index, const Movie& movie);
 
+    /**
+     * @brief Merge updated metadata into an existing movie by IMDb ID.
+     * Copies all metadata fields from the provided OMDb-sourced movie into the
+     * stored record identified by imdbID, while preserving userScore/userRank.
+     * If the movie is not found, returns false. Saves to disk on success.
+     */
+    bool mergeFromOmdbByImdbId(const Movie& omdbMovie);
+
     // Recompute 1-based userRank from userScore (descending). Unranked (-1) if list empty.
     /** @brief Recompute 1-based userRank from userScore descending. */
     void recomputeRanks();

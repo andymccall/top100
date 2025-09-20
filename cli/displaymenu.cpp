@@ -37,6 +37,9 @@ void displayMenu(bool omdbEnabled, bool blueSkyEnabled, bool mastodonEnabled)
     }
     std::cout << "6. View details\n";
     std::cout << "7. Compare two movies (rank)\n";
+    if (omdbEnabled) {
+        std::cout << "u. Update a movie from OMDb by IMDb ID\n";
+    }
     if (blueSkyEnabled) {
         std::cout << "8. Post a movie to BlueSky\n";
     } else {

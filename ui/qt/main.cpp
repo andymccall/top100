@@ -397,6 +397,11 @@ int main(int argc, char *argv[]) {
         }
     };
     QObject::connect(listView->selectionModel(), &QItemSelectionModel::currentChanged, &win, [=](const QModelIndex&, const QModelIndex&) { updateDetails(); });
+    // Also refresh details after a reload, in case selection index remains the same
+    QObject::connect(model, &Top100ListModel::reloadCompleted, &win, [updateDetails]() { updateDetails(); });
+    QObject::connect(model, &Top100ListModel::requestSelectRow, &win, [model, listView](int row){
+        if (row >= 0 && row < model->rowCount()) listView->setCurrentIndex(model->index(row, 0));
+    });
     // Select first item initially
     if (model->rowCount() > 0) {
         listView->setCurrentIndex(model->index(0, 0));
@@ -412,6 +417,7 @@ int main(int argc, char *argv[]) {
     QAction *refreshTbAct = toolbar->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Refresh"));
     QAction *postBskyAct = toolbar->addAction(QIcon::fromTheme("cloud-upload"), QStringLiteral("Post BlueSky"));
     QAction *postMastoAct = toolbar->addAction(QIcon::fromTheme("mail-send"), QStringLiteral("Post Mastodon"));
+    QAction *updateAct = toolbar->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Update (OMDb)"));
 
     // Bind sort combobox to model and preserve selection on reload
     // Initialize combo selection from model
@@ -527,6 +533,23 @@ int main(int argc, char *argv[]) {
         }
         win.statusBar()->showMessage(QStringLiteral("Posting to Mastodon..."), 3000);
         model->postToMastodonAsync(row);
+    });
+
+    QObject::connect(updateAct, &QAction::triggered, &win, [model, listView, &win]() {
+        int row = listView->currentIndex().row();
+        if (row < 0) { QMessageBox::warning(&win, QStringLiteral("Update"), QStringLiteral("Select a movie first.")); return; }
+        QString imdb = model->get(row).value("imdbID").toString();
+        if (imdb.isEmpty()) { QMessageBox::warning(&win, QStringLiteral("Update"), QStringLiteral("No IMDb ID for this movie.")); return; }
+        win.statusBar()->showMessage(QStringLiteral("Updating from OMDb..."), 2000);
+        if (model->updateFromOmdbByImdbId(imdb)) {
+            QMetaObject::Connection conn;
+            conn = QObject::connect(model, &Top100ListModel::reloadCompleted, &win, [&win, &conn]() {
+                win.statusBar()->showMessage(QStringLiteral("Updated from OMDb."), 3000);
+                QObject::disconnect(conn);
+            });
+        } else {
+            QMessageBox::warning(&win, QStringLiteral("Update"), QStringLiteral("Update failed."));
+        }
     });
 
     QObject::connect(model, &Top100ListModel::postingFinished, &win, [&win](const QString& service, int, bool ok) {

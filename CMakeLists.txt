@@ -34,6 +34,7 @@ option(TOP100_ENABLE_TESTS "Build unit tests" ON)
 # Optional UI frontends
 option(TOP100_UI_QT "Build the Qt (cross-platform) UI" OFF)
 option(TOP100_UI_KDE "Build the KDE-enhanced (Kirigami) UI" OFF)
+option(TOP100_UI_GTK "Build the GTK (gtkmm) UI" OFF)
 
 # --- Core Library ---
 # Build as STATIC to avoid STL crossing shared library boundaries in tests/CLI
@@ -182,13 +183,27 @@ if(TOP100_UI_QT)
   # Prefer Qt6, fall back to Qt5
   find_package(Qt6 QUIET COMPONENTS Widgets Concurrent Network)
   if(Qt6_FOUND)
-  add_executable(top100_qt ui/qt/main.cpp ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
+  add_executable(top100_qt
+    ui/qt/app.cpp
+    ui/qt/window.cpp
+    ui/qt/handlers.cpp
+    ui/qt/poster.cpp
+    ui/qt/menu.cpp
+    ui/qt/toolbar.cpp
+    ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
   target_link_libraries(top100_qt PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network top100 top100_config top100_config_utils top100_services)
     target_compile_features(top100_qt PRIVATE cxx_std_17)
     set_target_properties(top100_qt PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
   else()
     find_package(Qt5 REQUIRED COMPONENTS Widgets Concurrent Network)
-  add_executable(top100_qt ui/qt/main.cpp ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
+  add_executable(top100_qt
+    ui/qt/app.cpp
+    ui/qt/window.cpp
+    ui/qt/handlers.cpp
+    ui/qt/poster.cpp
+    ui/qt/menu.cpp
+    ui/qt/toolbar.cpp
+    ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
   target_link_libraries(top100_qt PRIVATE Qt5::Widgets Qt5::Concurrent Qt5::Network top100 top100_config top100_config_utils top100_services)
     target_compile_features(top100_qt PRIVATE cxx_std_17)
     set_target_properties(top100_qt PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
@@ -237,4 +252,23 @@ if(TOP100_UI_KDE)
   target_link_libraries(top100_kde PRIVATE ${_qt_quick_targets} ${_kirigami_target} top100 top100_config top100_config_utils top100_services)
   target_compile_features(top100_kde PRIVATE cxx_std_17)
   set_target_properties(top100_kde PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
+endif()
+
+# GTK UI (gtkmm 3)
+if(TOP100_UI_GTK)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GTKMM REQUIRED IMPORTED_TARGET gtkmm-3.0)
+  # GTK frontend does not use the Qt-based Top100ListModel; use core libs directly
+  add_executable(top100_gtk
+    ui/gtk/app.cpp
+    ui/gtk/window.cpp
+    ui/gtk/menu.cpp
+    ui/gtk/poster.cpp
+    ui/gtk/handlers.cpp
+    ui/gtk/toolbar.cpp
+  )
+  target_include_directories(top100_gtk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ui/common ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+  target_link_libraries(top100_gtk PRIVATE PkgConfig::GTKMM top100 top100_config top100_config_utils top100_services)
+  target_compile_features(top100_gtk PRIVATE cxx_std_17)
+  set_target_properties(top100_gtk PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
 endif()

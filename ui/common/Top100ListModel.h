@@ -257,6 +257,29 @@ public:
         }
         return out;
     }
+    /** Update an existing movie by IMDb ID from OMDb and refresh. */
+    Q_INVOKABLE bool updateFromOmdbByImdbId(const QString& imdbId) {
+        try {
+            AppConfig cfg = loadConfig();
+            if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) return false;
+            auto maybe = omdbGetById(cfg.omdbApiKey, imdbId.toStdString());
+            if (!maybe) return false;
+            Top100 list(cfg.dataFile);
+            bool ok = list.mergeFromOmdbByImdbId(*maybe);
+            if (!ok) return false;
+        } catch (...) { return false; }
+        // Preserve current selection by imdb when reloading
+        QString imdb = imdbId;
+        QMetaObject::Connection conn;
+        conn = connect(this, &Top100ListModel::reloadCompleted, this, [this, imdb, &conn]() {
+            for (int i = 0; i < rowCount(); ++i) {
+                if (get(i).value("imdbID").toString() == imdb) { emit requestSelectRow(i); break; }
+            }
+            disconnect(conn);
+        });
+        reload();
+        return true;
+    }
 
     /** Post the selected movie to BlueSky synchronously. */
     Q_INVOKABLE bool postToBlueSky(int row) {
@@ -319,6 +342,8 @@ public:
     }
 
 signals:
+    /** Emitted after reload to request view re-select a row by index. */
+    void requestSelectRow(int row);
     /** Emitted when an async post finishes. */
     void postingFinished(const QString& service, int row, bool success);
     /** Emitted when sort order changes (value matches SortOrder enum). */
