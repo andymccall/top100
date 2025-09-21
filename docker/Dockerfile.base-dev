@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+
+# Minimal base for reproducible Linux builds of core/CLI/tests
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    pkg-config \
+    ca-certificates \
+    curl \
+    unzip \
+    zlib1g-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libboost-all-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+
+# Default command opens a shell; CI can override with `cmake ... && cmake --build ...`
+CMD ["bash"]

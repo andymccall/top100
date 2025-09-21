@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1
+
+# Haiku cross-compile environment (compile-only)
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    pkg-config \
+    ca-certificates \
+    curl \
+    unzip \
+    zlib1g-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libboost-all-dev \
+    bison flex \
+    gawk texinfo autoconf automake libtool \
+    rsync \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/haiku
+
+# Helper script to fetch and build Haiku cross-tools (x86_64 by default)
+ADD haiku-buildtools.sh /usr/local/bin/haiku-buildtools.sh
+RUN chmod +x /usr/local/bin/haiku-buildtools.sh
+
+WORKDIR /work
+
+CMD ["bash"]
