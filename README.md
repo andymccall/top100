@@ -48,6 +48,28 @@ cli/
 lib/
   config.h/.cpp     # Per-user config: data path; OMDb; BlueSky; Mastodon; post header/footer
   config_utils.*    # High-level helpers (set data path, configure/disable OMDb)
+ui/
+  common/
+    strings.h              # Shared UI strings (window titles, labels, menu text)
+    constants.h            # Shared UI constants (spacing, poster ratios)
+    Top100ListModel.h/.cpp # Shared model used by Qt/KDE frontends
+  qt/
+    app.h/.cpp             # Qt application/bootstrap
+    window.h/.cpp          # Main window, two‑pane layout, status bar
+    adddialog.h/.cpp       # Rich Add Movie (OMDb) dialog
+    toolbar.h/.cpp         # Toolbar actions (Add/Delete/Refresh/Update/Post)
+    menu.h/.cpp            # Menu bar wiring
+    poster.h/.cpp          # Poster fetch/scale helpers
+  gtk/
+    app.h/.cpp             # GTK application/bootstrap (gtkmm 3)
+    window.h/.cpp          # Main window, two‑pane layout, status bar
+    adddialog.h/.cpp       # Rich Add Movie (OMDb) dialog
+    toolbar.h/.cpp         # Toolbar actions
+    menu.h/.cpp            # Menu bar wiring
+    poster.h/.cpp          # Poster fetch/scale helpers
+  kde/
+    main.cpp               # QML/Kirigami bootstrap
+    qml/Main.qml           # Kirigami UI (two‑pane, footer count, Add dialog)
 tests/
   test_*.cpp        # Granular unit tests (incl. ranking)
 CMakeLists.txt       # Build and test wiring
@@ -86,12 +108,14 @@ In addition to the CLI, you can build optional desktop UIs:
 - Qt (cross‑platform) UI — Widgets‑based, no KDE dependencies
 - GTK UI — gtkmm 3 (GNOME‑friendly) with the same two‑pane layout and Add dialog
 - KDE UI — Kirigami/QML frontend with KDE Frameworks integration
+ - Haiku UI — BeAPI-based minimal frontend (experimental)
 
 All UIs are disabled by default. Enable with CMake options:
 
 - `-DTOP100_UI_QT=ON` to build `top100_qt`
 - `-DTOP100_UI_GTK=ON` to build `top100_gtk`
 - `-DTOP100_UI_KDE=ON` to build `top100_kde`
+ - `-DTOP100_UI_HAIKU=ON` to build `top100_haiku` (only on Haiku OS; otherwise skipped)
 
 Dependencies:
 
@@ -113,6 +137,10 @@ cmake --build build --target top100_kde
 # GTK UI (gtkmm 3)
 cmake -S . -B build -DTOP100_UI_GTK=ON
 cmake --build build --target top100_gtk
+
+# Haiku UI (BeAPI) — on Haiku OS
+cmake -S . -B build -DTOP100_UI_HAIKU=ON
+cmake --build build --target top100_haiku
 ```
 
 If both are enabled, both executables are built. The UIs link the same core libraries; we’ll progressively wire features without duplicating logic.

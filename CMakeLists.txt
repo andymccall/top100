@@ -35,6 +35,7 @@ option(TOP100_ENABLE_TESTS "Build unit tests" ON)
 option(TOP100_UI_QT "Build the Qt (cross-platform) UI" OFF)
 option(TOP100_UI_KDE "Build the KDE-enhanced (Kirigami) UI" OFF)
 option(TOP100_UI_GTK "Build the GTK (gtkmm) UI" OFF)
+option(TOP100_UI_HAIKU "Build the Haiku (BeAPI) UI" OFF)
 
 # --- Core Library ---
 # Build as STATIC to avoid STL crossing shared library boundaries in tests/CLI
@@ -274,4 +275,21 @@ if(TOP100_UI_GTK)
   target_link_libraries(top100_gtk PRIVATE PkgConfig::GTKMM top100 top100_config top100_config_utils top100_services)
   target_compile_features(top100_gtk PRIVATE cxx_std_17)
   set_target_properties(top100_gtk PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
+endif()
+
+# Haiku UI (BeAPI)
+if(TOP100_UI_HAIKU)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+    add_executable(top100_haiku
+      ui/haiku/app.cpp
+      ui/haiku/window.cpp
+      ui/haiku/add_dialog.cpp
+    )
+    target_include_directories(top100_haiku PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ui/haiku ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+    target_link_libraries(top100_haiku PRIVATE top100 top100_config top100_config_utils top100_services be tracker)
+    target_compile_features(top100_haiku PRIVATE cxx_std_17)
+    set_target_properties(top100_haiku PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
+  else()
+    message(WARNING "TOP100_UI_HAIKU is ON but host OS is not Haiku; skipping Haiku UI build.")
+  endif()
 endif()

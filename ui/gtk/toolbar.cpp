@@ -48,6 +48,9 @@ void Top100GtkWindow::build_toolbar() {
     // Wire handlers
     btn_add_->signal_clicked().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_add_movie));
     btn_delete_->signal_clicked().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_delete_current));
-    btn_refresh_->signal_clicked().connect([this]() { reload_model(current_selected_imdb()); show_status("Refreshed"); });
+    btn_refresh_->signal_clicked().connect([this]() {
+        reload_model(current_selected_imdb());
+        update_status_movie_count();
+    });
     btn_update_->signal_clicked().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_update_current));
 }
