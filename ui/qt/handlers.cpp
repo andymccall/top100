@@ -22,6 +22,7 @@
 #include "../../lib/config.h"
 #include "../../lib/omdb.h"
 #include "../common/constants.h"
+#include "rankdialog.h"
 
 using namespace ui_constants;
 
@@ -131,6 +132,15 @@ void Top100QtWindow::onUpdateFromOmdb() {
     } else {
         QMessageBox::warning(this, QStringLiteral("Update"), QStringLiteral("Update failed."));
     }
+}
+
+void Top100QtWindow::onOpenRankDialog() {
+    if (!model_ || model_->rowCount() < 2) {
+        QMessageBox::information(this, QStringLiteral("Rank"), QStringLiteral("Need at least 2 movies to rank."));
+        return;
+    }
+    Top100QtRankDialog dlg(this, model_);
+    dlg.exec();
 }
 
 void Top100QtWindow::onSortChanged() {

@@ -31,6 +31,7 @@ constexpr double kPosterMaxHeightRatio = 0.90; // 90% of details pane height
 // Shared spacing and margins for consistent look-and-feel
 constexpr int kSpacingSmall = 6;      // small spacing between controls
 constexpr int kSpacingMedium = 10;    // medium spacing (unused yet)
+constexpr int kSpacingLarge = 16;     // large spacing for dialog sections
 constexpr int kGroupPadding = 8;      // inner padding inside frames/groups
 constexpr int kLabelMinWidth = 90;    // minimum width for labels in forms
 

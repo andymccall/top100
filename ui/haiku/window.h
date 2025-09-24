@@ -25,6 +25,7 @@ class BMenuField;
 class BPopUpMenu;
 class BButton;
 class BSplitView;
+class CompareDialog;
 
 class Top100HaikuWindow : public BWindow {
 public:
@@ -41,7 +42,8 @@ private:
         kMsgDoAdd         = 'addM',
         kMsgDoDelete      = 'delM',
         kMsgDoRefresh     = 'rfrs',
-        kMsgDoUpdate      = 'updm'
+        kMsgDoUpdate      = 'updm',
+        kMsgDoRank        = 'rank'
     };
 
     // Message from Add dialog when user confirms

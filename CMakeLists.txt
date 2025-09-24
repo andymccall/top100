@@ -192,6 +192,7 @@ if(TOP100_UI_QT)
     ui/qt/menu.cpp
     ui/qt/toolbar.cpp
     ui/qt/adddialog.cpp
+    ui/qt/rankdialog.cpp ui/qt/rankdialog.h
     ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
   target_link_libraries(top100_qt PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network top100 top100_config top100_config_utils top100_services)
     target_compile_features(top100_qt PRIVATE cxx_std_17)
@@ -206,6 +207,7 @@ if(TOP100_UI_QT)
     ui/qt/menu.cpp
     ui/qt/toolbar.cpp
     ui/qt/adddialog.cpp
+    ui/qt/rankdialog.cpp ui/qt/rankdialog.h
     ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp)
   target_link_libraries(top100_qt PRIVATE Qt5::Widgets Qt5::Concurrent Qt5::Network top100 top100_config top100_config_utils top100_services)
     target_compile_features(top100_qt PRIVATE cxx_std_17)
@@ -270,6 +272,7 @@ if(TOP100_UI_GTK)
     ui/gtk/handlers.cpp
     ui/gtk/toolbar.cpp
     ui/gtk/adddialog.cpp
+    ui/gtk/rankdialog.cpp ui/gtk/rankdialog.h
   )
   target_include_directories(top100_gtk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ui/common ${CMAKE_CURRENT_SOURCE_DIR}/lib)
   target_link_libraries(top100_gtk PRIVATE PkgConfig::GTKMM top100 top100_config top100_config_utils top100_services)

@@ -97,6 +97,14 @@ Kirigami.ApplicationWindow {
                 icon.height: Kirigami.Units.iconSizes.medium
                 onClicked: postSelectedToMastodon()
             }
+            ToolButton {
+                icon.name: "favorites"
+                text: qsTr("Rank")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                onClicked: openRankDialog()
+            }
         }
     }
 
@@ -343,6 +351,243 @@ Kirigami.ApplicationWindow {
             width: parent.width * 0.8
             visible: list.count === 0
             text: qsTr("No movies yet. Use the CLI to add some, then reopen the app.")
+        }
+    }
+
+    // ---------------- Ranking dialog ----------------
+    function openRankDialog() {
+        if (!top100Model || (top100Model.count && top100Model.count() < 2)) {
+            window.showPassiveNotification(qsTr("Need at least 2 movies to rank."));
+            return;
+        }
+        rankDialog.resetAndOpen();
+    }
+
+    Dialog {
+        id: rankDialog
+        modal: true
+    // Keep the window title empty; use the centered heading below
+    title: ""
+        // Suppress the default QQC2 header entirely to avoid a second title row
+        header: null
+    // Fixed size and not resizable
+    width: Kirigami.Units.gridUnit * 70
+    height: Kirigami.Units.gridUnit * 45
+    resizeToItem: false
+        standardButtons: Dialog.NoButton
+        // Center the dialog on the main window
+        anchors.centerIn: parent
+
+        property int leftIndex: -1
+        property int rightIndex: -1
+
+        function leftMovie() {
+            if (!top100Model || leftIndex < 0) return ({})
+            if (typeof top100Model.get !== 'function') return ({})
+            return top100Model.get(leftIndex)
+        }
+        function rightMovie() {
+            if (!top100Model || rightIndex < 0) return ({})
+            if (typeof top100Model.get !== 'function') return ({})
+            return top100Model.get(rightIndex)
+        }
+        function joinList(list) {
+            if (!list || list.length === 0) return ""
+            var s = ""
+            for (var i = 0; i < list.length; ++i) { if (i) s += ", "; s += list[i] }
+            return s
+        }
+
+        function pickTwo() {
+            var n = (top100Model && typeof top100Model.count === 'function') ? top100Model.count() : 0
+            if (n < 2) { leftIndex = rightIndex = -1; return }
+            var a = Math.floor(Math.random() * n)
+            var b = Math.floor(Math.random() * n)
+            if (b === a) b = (a + 1) % n
+            leftIndex = a
+            rightIndex = b
+        }
+        function resetAndOpen() {
+            pickTwo()
+            open()
+        }
+        function chooseLeft() {
+            if (leftIndex < 0 || rightIndex < 0) return
+            top100Model.recordPairwiseResult(leftIndex, rightIndex, 1)
+            pickTwo()
+        }
+        function chooseRight() {
+            if (leftIndex < 0 || rightIndex < 0) return
+            top100Model.recordPairwiseResult(leftIndex, rightIndex, 0)
+            pickTwo()
+        }
+        function passPair() {
+            pickTwo()
+        }
+
+        onOpened: {
+            // Center dialog within window and set key focus
+            x = Math.max(0, Math.round((window.width - width) / 2))
+            y = Math.max(0, Math.round((window.height - height) / 2))
+            leftKeyTarget.focus = true
+        }
+
+        contentItem: Item {
+            anchors.fill: parent
+            anchors.margins: Kirigami.Units.largeSpacing // gap around dialog content
+            Keys.forwardTo: [ leftKeyTarget ]
+
+            // Invisible item to capture keys
+            Item {
+                id: leftKeyTarget
+                focus: true
+                Keys.onLeftPressed: rankDialog.chooseLeft()
+                Keys.onRightPressed: rankDialog.chooseRight()
+                Keys.onDownPressed: rankDialog.passPair()
+            }
+
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: Kirigami.Units.largeSpacing
+                // Centered bold heading for dialog
+                Kirigami.Heading {
+                    level: 2
+                    text: qsTr("Rank movies")
+                    font.bold: true
+                    font.weight: Font.Bold
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                // Prompt
+                Label {
+                    text: qsTr("Which movie do you prefer?")
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                // Two-pane row
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: Kirigami.Units.largeSpacing
+
+                    // Left pane
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        padding: Kirigami.Units.smallSpacing
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: Kirigami.Units.smallSpacing
+                            Kirigami.Heading {
+                                level: 3; font.bold: true; font.weight: Font.Bold
+                                text: (rankDialog.leftMovie().title || "") + (rankDialog.leftMovie().year ? (" (" + rankDialog.leftMovie().year + ")") : "")
+                            }
+                            GridLayout {
+                                columns: 2; rowSpacing: 4; columnSpacing: 12
+                                Label { text: UiStrings_FieldDirector; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.leftMovie().director || "") ; wrapMode: Text.WordWrap }
+                                Label { text: UiStrings_FieldActors; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.leftMovie().actors && rankDialog.leftMovie().actors.length > 0) ? rankDialog.leftMovie().actors.join(", ") : ""; elide: Text.ElideRight }
+                                Label { text: UiStrings_FieldGenres; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.leftMovie().genres && rankDialog.leftMovie().genres.length > 0) ? rankDialog.leftMovie().genres.join(", ") : ""; wrapMode: Text.WordWrap }
+                                Label { text: UiStrings_FieldRuntime; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.leftMovie().runtimeMinutes ? (rankDialog.leftMovie().runtimeMinutes + " min") : "") }
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: parent.width * Ui_PosterMaxWidthRatio
+                                    height: parent.height * Ui_PosterMaxHeightRatio
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    source: (rankDialog.leftMovie().posterUrl || "")
+                                    visible: source !== "" && status === Image.Ready
+                                }
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: rankDialog.chooseLeft()
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            ToolTip.visible: containsMouse
+                            ToolTip.delay: 300
+                            ToolTip.text: qsTr("Click to choose this movie")
+                        }
+                    }
+
+                    // Right pane
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        padding: Kirigami.Units.smallSpacing
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: Kirigami.Units.smallSpacing
+                            Kirigami.Heading {
+                                level: 3; font.bold: true; font.weight: Font.Bold
+                                text: (rankDialog.rightMovie().title || "") + (rankDialog.rightMovie().year ? (" (" + rankDialog.rightMovie().year + ")") : "")
+                            }
+                            GridLayout {
+                                columns: 2; rowSpacing: 4; columnSpacing: 12
+                                Label { text: UiStrings_FieldDirector; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.rightMovie().director || "") ; wrapMode: Text.WordWrap }
+                                Label { text: UiStrings_FieldActors; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.rightMovie().actors && rankDialog.rightMovie().actors.length > 0) ? rankDialog.rightMovie().actors.join(", ") : ""; elide: Text.ElideRight }
+                                Label { text: UiStrings_FieldGenres; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.rightMovie().genres && rankDialog.rightMovie().genres.length > 0) ? rankDialog.rightMovie().genres.join(", ") : ""; wrapMode: Text.WordWrap }
+                                Label { text: UiStrings_FieldRuntime; Layout.minimumWidth: Ui_LabelMinWidth }
+                                Label { text: (rankDialog.rightMovie().runtimeMinutes ? (rankDialog.rightMovie().runtimeMinutes + " min") : "") }
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: parent.width * Ui_PosterMaxWidthRatio
+                                    height: parent.height * Ui_PosterMaxHeightRatio
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    source: (rankDialog.rightMovie().posterUrl || "")
+                                    visible: source !== "" && status === Image.Ready
+                                }
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: rankDialog.chooseRight()
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            ToolTip.visible: containsMouse
+                            ToolTip.delay: 300
+                            ToolTip.text: qsTr("Click to choose this movie")
+                        }
+                    }
+                }
+
+                // Bottom action row
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Kirigami.Units.smallSpacing
+                    Item { Layout.fillWidth: true }
+                    Button {
+                        text: qsTr("Pass")
+                        highlighted: true // default-style emphasis
+                        onClicked: rankDialog.passPair()
+                    }
+                    Button {
+                        text: qsTr("Finish Ranking")
+                        onClicked: rankDialog.close()
+                    }
+                }
+            }
+            // Treat Enter/Return as Pass for quick flow
+            Keys.onEnterPressed: rankDialog.passPair()
+            Keys.onReturnPressed: rankDialog.passPair()
         }
     }
 

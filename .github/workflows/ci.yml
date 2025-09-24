@@ -18,12 +18,12 @@ jobs:
             qtbase5-dev qtdeclarative5-dev qml-module-qtquick-controls2 qml-module-qtquick-layouts \
             qml-module-qtgraphicaleffects qml-module-qtqml-models2 qml-module-qtquick-window2 \
             qml-module-qtquick2 libgtkmm-3.0-dev
-      - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DTOP100_UI_QT=ON -DTOP100_UI_GTK=ON -DTOP100_UI_KDE=ON
+      - name: Configure (presets)
+        run: cmake --preset linux -DTOP100_UI_QT=ON -DTOP100_UI_GTK=ON -DTOP100_UI_KDE=ON
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build --preset linux --parallel
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --preset linux --output-on-failure
 
   lint-includes:
     runs-on: ubuntu-latest
@@ -33,11 +33,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y iwyu cmake gcc g++ ninja-build pkg-config
-      - name: Configure with IWYU
-        run: cmake -S . -B build -G Ninja -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=iwyu
+      - name: Configure with IWYU (presets)
+        run: cmake --preset linux -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=iwyu
       - name: Run IWYU (best-effort)
-        run: cmake --build build --parallel || true
+        run: cmake --build --preset linux --parallel || true
       - name: Summarize IWYU suggestions
         run: |
           echo "IWYU suggestions (if any):"
-          grep -R "should add these lines" -n build || true
+          grep -R "should add these lines" -n build/linux || true

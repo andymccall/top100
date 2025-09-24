@@ -26,6 +26,10 @@
 #include <Roster.h>
 #include <sstream>
 #include <optional>
+#include <cmath>
+#include <deque>
+#include <TranslationUtils.h>
+#include <cpr/cpr.h>
 
 #include "../../lib/config.h"
 #include "../../lib/top100.h"
@@ -152,6 +156,230 @@ void Top100HaikuWindow::MessageReceived(BMessage* msg) {
             }
             break;
         }
+    case kMsgDoRank: {
+            // Open compare (ranking) dialog
+            class CompareDialog : public BWindow {
+            public:
+                CompareDialog(BWindow* parent) : BWindow(BRect(0,0,900,600), "Rank movies", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE), parentMsgr_(parent) {
+                    SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
+                    if (parent) AddToSubset(parent);
+                    if (parent) {
+                        // Center on parent
+                        BRect p = parent->Frame();
+                        MoveTo(p.left + (p.Width() - Frame().Width())/2, p.top + (p.Height() - Frame().Height())/2);
+                    }
+                    BuildUI();
+                }
+            private:
+                class PosterView : public BView {
+                public:
+                    PosterView(BRect frame, const char* name) : BView(frame, name, B_FOLLOW_ALL, B_WILL_DRAW) {
+                        SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+                    }
+                    ~PosterView() override { if (fBitmap) delete fBitmap; }
+                    void SetBitmap(BBitmap* bm) { if (fBitmap) delete fBitmap; fBitmap = bm; Invalidate(); }
+                    void Draw(BRect) override {
+                        if (!fBitmap) return;
+                        BRect bounds = Bounds();
+                        float maxW = bounds.Width() * ui_constants::kPosterMaxWidthRatio;
+                        float maxH = bounds.Height() * ui_constants::kPosterMaxHeightRatio;
+                        BRect src = fBitmap->Bounds();
+                        float sw = src.Width(); float sh = src.Height();
+                        if (sw <= 0 || sh <= 0) return;
+                        float sx = maxW / sw, sy = maxH / sh; float s = std::min(1.0f, std::min(sx, sy));
+                        float tw = std::max(1.0f, sw * s), th = std::max(1.0f, sh * s);
+                        BRect dst(0, 0, tw, th);
+                        // center within view
+                        dst.OffsetTo((bounds.Width() - tw)/2, (bounds.Height() - th)/2);
+                        DrawBitmap(fBitmap, src, dst, B_FILTER_BITMAP_BILINEAR);
+                    }
+                private:
+                    BBitmap* fBitmap { nullptr };
+                };
+                // UI elements
+                BView* root { nullptr };
+                BStringView* heading { nullptr };
+                BStringView* prompt { nullptr };
+                BView* leftPane { nullptr };
+                BStringView* leftTitle { nullptr };
+                BTextView* leftDetails { nullptr };
+                PosterView* leftPoster { nullptr };
+                BView* rightPane { nullptr };
+                BStringView* rightTitle { nullptr };
+                BTextView* rightDetails { nullptr };
+                PosterView* rightPoster { nullptr };
+                BButton* passBtn { nullptr };
+                BButton* finishBtn { nullptr };
+                int32 leftIdx { -1 };
+                int32 rightIdx { -1 };
+                int32 prevA { -1 }, prevB { -1 };
+                std::deque<std::pair<int32,int32>> recentPairs; // history of recent pairs to avoid repeats
+                static constexpr size_t kMaxRecentPairs = 20;
+                BMessenger parentMsgr_;
+
+                static std::string Join(const std::vector<std::string>& v, const char* sep = ", ") {
+                    std::ostringstream oss; bool first = true; for (const auto& s : v) { if (!first) oss << sep; oss << s; first = false; } return oss.str();
+                }
+                void BuildUI() {
+                    root = new BView(Bounds(), "root", B_FOLLOW_ALL, B_WILL_DRAW);
+                    root->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+                    AddChild(root);
+                    float x = 12, y = 12;
+                    heading = new BStringView(BRect(x, y, Bounds().Width()-x, y+24), "hdr", "Rank movies"); y += 28;
+                    prompt = new BStringView(BRect(x, y, Bounds().Width()-x, y+20), "prm", "Which movie do you prefer?"); y += 24;
+                    root->AddChild(heading);
+                    root->AddChild(prompt);
+                    float midX = Bounds().Width()/2;
+                    // Left
+                    leftPane = new BView(BRect(x, y, midX-6, Bounds().Height()-56), "left", B_FOLLOW_ALL, B_WILL_DRAW);
+                    leftPane->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+                    leftTitle = new BStringView(BRect(8, 8, leftPane->Bounds().Width()-8, 28), "lt", "");
+                    leftDetails = new BTextView(BRect(8, 36, leftPane->Bounds().Width()-8, 36 + 120), "ld");
+                    leftDetails->MakeEditable(false);
+                    leftDetails->SetWordWrap(true);
+                    leftPoster = new PosterView(BRect(8, 36 + 124, leftPane->Bounds().Width()-8, leftPane->Bounds().Height()-8), "lposter");
+                    leftPane->AddChild(leftTitle);
+                    leftPane->AddChild(leftDetails);
+                    leftPane->AddChild(leftPoster);
+                    root->AddChild(leftPane);
+                    // Right
+                    rightPane = new BView(BRect(midX+6, y, Bounds().Width()-x, Bounds().Height()-56), "right", B_FOLLOW_ALL, B_WILL_DRAW);
+                    rightPane->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
+                    rightTitle = new BStringView(BRect(8, 8, rightPane->Bounds().Width()-8, 28), "rt", "");
+                    rightDetails = new BTextView(BRect(8, 36, rightPane->Bounds().Width()-8, 36 + 120), "rd");
+                    rightDetails->MakeEditable(false);
+                    rightDetails->SetWordWrap(true);
+                    rightPoster = new PosterView(BRect(8, 36 + 124, rightPane->Bounds().Width()-8, rightPane->Bounds().Height()-8), "rposter");
+                    rightPane->AddChild(rightTitle);
+                    rightPane->AddChild(rightDetails);
+                    rightPane->AddChild(rightPoster);
+                    root->AddChild(rightPane);
+                    // Bottom
+                    passBtn = new BButton(BRect(Bounds().Width()-220, Bounds().Height()-40, Bounds().Width()-130, Bounds().Height()-16), "pass", "Pass", new BMessage('pass'));
+                    finishBtn = new BButton(BRect(Bounds().Width()-120, Bounds().Height()-40, Bounds().Width()-12, Bounds().Height()-16), "done", "Finish Ranking", new BMessage(B_QUIT_REQUESTED));
+                    root->AddChild(passBtn);
+                    root->AddChild(finishBtn);
+                    // Click handlers: mouse down selects that side
+                    leftPane->SetEventMask(B_POINTER_EVENTS);
+                    rightPane->SetEventMask(B_POINTER_EVENTS);
+                    // Pointer events for hover + clicks
+                    PickTwo();
+                }
+
+                void PickTwo() {
+                    AppConfig cfg = loadConfig(); Top100 list(cfg.dataFile);
+                    auto movies = list.getMovies(SortOrder::DEFAULT);
+                    int n = (int)movies.size(); if (n < 2) { leftIdx = rightIdx = -1; return; }
+                    int attempts = 0;
+                    auto isRepeat = [this](int a, int b){
+                        for (const auto& pr : recentPairs) {
+                            if ((pr.first == a && pr.second == b) || (pr.first == b && pr.second == a)) return true;
+                        }
+                        return false;
+                    };
+                    int a = rand() % n; int b = rand() % n;
+                    while ((b == a) || isRepeat(a,b)) {
+                        b = rand() % n; a = rand() % n; if (++attempts > 50) break;
+                    }
+                    if (recentPairs.size() >= kMaxRecentPairs) recentPairs.pop_front();
+                    recentPairs.emplace_back(a,b);
+                    prevA = a; prevB = b; leftIdx = a; rightIdx = b; Refresh(true); Refresh(false);
+                }
+                void Refresh(bool left) {
+                    AppConfig cfg = loadConfig(); Top100 list(cfg.dataFile);
+                    auto movies = list.getMovies(SortOrder::DEFAULT);
+                    int idx = left ? leftIdx : rightIdx; if (idx < 0 || idx >= (int)movies.size()) return;
+                    const Movie& mv = movies[(size_t)idx];
+                    std::string head = mv.title + " (" + std::to_string(mv.year) + ")";
+                    std::string det = std::string("Director: ") + mv.director + "\nActors: " + Join(mv.actors, ", ") + "\nGenres: " + Join(mv.genres, ", ") + "\nRuntime: " + (mv.runtimeMinutes > 0 ? std::to_string(mv.runtimeMinutes) + " min" : "");
+                    if (left) { leftTitle->SetText(head.c_str()); leftDetails->SetText(det.c_str()); }
+                    else      { rightTitle->SetText(head.c_str()); rightDetails->SetText(det.c_str()); }
+                    // Load posters asynchronously
+                    if (!mv.posterUrl.empty()) LoadPoster(left, mv.posterUrl);
+                }
+                void Choose(bool left) {
+                    if (leftIdx < 0 || rightIdx < 0) return;
+                    AppConfig cfg = loadConfig(); Top100 list(cfg.dataFile);
+                    auto movies = list.getMovies(SortOrder::DEFAULT);
+                    if (leftIdx >= (int)movies.size() || rightIdx >= (int)movies.size()) return;
+                    Movie L = movies[leftIdx], R = movies[rightIdx];
+                    auto elo = [](double &a, double &b, double scoreA, double k=32.0){ double qa = pow(10.0, a/400.0), qb = pow(10.0, b/400.0); double ea = qa/(qa+qb), eb = qb/(qa+qb); a = a + k * (scoreA - ea); b = b + k * ((1.0 - scoreA) - eb); };
+                    elo(L.userScore, R.userScore, left ? 1.0 : 0.0);
+                    int li = list.findIndexByImdbId(L.imdbID); if (li >= 0) list.updateMovie((size_t)li, L);
+                    int ri = list.findIndexByImdbId(R.imdbID); if (ri >= 0) list.updateMovie((size_t)ri, R);
+                    list.recomputeRanks();
+                    PickTwo();
+                }
+
+                void LoadPoster(bool leftSide, const std::string& url) {
+                    // Capture messenger to post back to this window safely
+                    BMessenger msgr(this);
+                    std::thread([this, msgr, url, leftSide]() {
+                        auto resp = cpr::Get(cpr::Url{url}, cpr::Timeout{8000});
+                        if (resp.error || resp.status_code != 200 || resp.text.empty()) return;
+                        // Decode via Translation Kit
+                        BBitmap* bitmap = BTranslationUtils::GetBitmapFromBuffer(resp.text.data(), resp.text.size());
+                        if (!bitmap) return;
+                        // Apply on UI thread
+                        BMessage m('pstr');
+                        m.AddPointer("bm", bitmap);
+                        m.AddBool("left", leftSide);
+                        msgr.SendMessage(&m);
+                    }).detach();
+                }
+
+                void MessageReceived(BMessage* msg) override {
+                    switch (msg->what) {
+                        case 'pass': PickTwo(); break;
+                        case 'pstr': {
+                            BBitmap* bm = nullptr; bool leftSide = true;
+                            msg->FindPointer("bm", reinterpret_cast<void**>(&bm));
+                            msg->FindBool("left", &leftSide);
+                            if (bm) {
+                                if (leftSide && leftPoster) leftPoster->SetBitmap(bm);
+                                else if (rightPoster) rightPoster->SetBitmap(bm);
+                            }
+                            break;
+                        }
+                        default: BWindow::MessageReceived(msg);
+                    }
+                }
+                bool QuitRequested() override {
+                    // Ask parent to refresh list to reflect updated ranks
+                    if (parentMsgr_.IsValid()) {
+                        BMessage refresh('rfrs'); // matches kMsgDoRefresh
+                        parentMsgr_.SendMessage(&refresh);
+                    }
+                    return BWindow::QuitRequested();
+                }
+                void MouseDown(BPoint pt) override {
+                    BRect l = leftPane->Frame(); BRect r = rightPane->Frame();
+                    if (l.Contains(pt)) { Choose(true); return; }
+                    if (r.Contains(pt)) { Choose(false); return; }
+                    BWindow::MouseDown(pt);
+                }
+                void MouseMoved(BPoint pt, uint32 transit, const BMessage* message) override {
+                    BRect l = leftPane->Frame(); BRect r = rightPane->Frame();
+                    if (l.Contains(pt) || r.Contains(pt)) be_app->SetCursor(B_HAND_CURSOR);
+                    else be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
+                    BWindow::MouseMoved(pt, transit, message);
+                }
+                void KeyDown(const char* bytes, int32 numBytes) override {
+                    if (numBytes > 0) {
+                        switch (bytes[0]) {
+                            case B_LEFT_ARROW: Choose(true); return;
+                            case B_RIGHT_ARROW: Choose(false); return;
+                            case B_DOWN_ARROW:
+                            case B_ENTER:
+                            case B_RETURN: PickTwo(); return;
+                        }
+                    }
+                    BWindow::KeyDown(bytes, numBytes);
+                }
+            };
+            (new CompareDialog(this))->Show();
+            break;
+        }
         case kMsgOpenImdb: {
             if (!listView_) break;
             int row = listView_->CurrentSelection();
@@ -183,6 +411,8 @@ void Top100HaikuWindow::BuildMenu() {
     listMenu->AddSeparatorItem();
     listMenu->AddItem(new BMenuItem("Refresh", new BMessage(kMsgDoRefresh), 'R'));
     listMenu->AddItem(new BMenuItem("Update from OMDb", new BMessage(kMsgDoUpdate), 'U'));
+    listMenu->AddSeparatorItem();
+    listMenu->AddItem(new BMenuItem("Rank…", new BMessage(kMsgDoRank), 'K'));
     menubar_->AddItem(listMenu);
 }
 

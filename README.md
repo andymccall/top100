@@ -81,16 +81,20 @@ top100.json          # Example data file (actual location is configurable)
 
 Prereqs: a C++17 compiler, CMake 3.11+, and OpenSSL dev headers (for HTTPS via `cpr`).
 
+Preferred (presets + nested build dirs):
+
 ```bash
-# Configure & build
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
+# Configure into build/linux using Ninja
+cmake --preset linux
+
+# Build
+cmake --build --preset linux --parallel
 
 # Run tests
-cd build && ctest --output-on-failure
+ctest --preset linux --output-on-failure
 
 # Run the CLI
-./build/top100_cli
+./build/linux/top100_cli
 ```
 
 If you use VS Code, this repo includes `.vscode/tasks.json` with handy tasks. In particular, “Clean & Rebuild (UIs + Tests)” will:
@@ -123,24 +127,24 @@ Dependencies:
 - GTK UI: gtkmm 3.0 (via pkg‑config)
 - KDE UI: Qt Quick/QML (5 or 6) and Kirigami2 from KDE Frameworks (KF5 or KF6)
 
-Example build (out‑of‑tree):
+Example build (out-of-tree, manual):
 
 ```bash
-# Qt UI only
-cmake -S . -B build -DTOP100_UI_QT=ON
-cmake --build build --target top100_qt
+# Qt UI only (manual configure dir)
+cmake -S . -B build/linux -DTOP100_UI_QT=ON
+cmake --build build/linux --target top100_qt
 
 # KDE UI (Kirigami)
-cmake -S . -B build -DTOP100_UI_KDE=ON
-cmake --build build --target top100_kde
+cmake -S . -B build/linux -DTOP100_UI_KDE=ON
+cmake --build build/linux --target top100_kde
 
 # GTK UI (gtkmm 3)
-cmake -S . -B build -DTOP100_UI_GTK=ON
-cmake --build build --target top100_gtk
+cmake -S . -B build/linux -DTOP100_UI_GTK=ON
+cmake --build build/linux --target top100_gtk
 
 # Haiku UI (BeAPI) — on Haiku OS
-cmake -S . -B build -DTOP100_UI_HAIKU=ON
-cmake --build build --target top100_haiku
+cmake -S . -B build/haiku -DTOP100_UI_HAIKU=ON
+cmake --build build/haiku --target top100_haiku
 ```
 
 If both are enabled, both executables are built. The UIs link the same core libraries; we’ll progressively wire features without duplicating logic.

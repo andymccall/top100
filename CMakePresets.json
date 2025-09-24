@@ -1,0 +1,84 @@
+{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "linux",
+      "displayName": "Linux (Ninja → build/linux)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "linux-make",
+      "displayName": "Linux (Makefiles → build/linux)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "haiku",
+      "displayName": "Haiku (Ninja → build/haiku)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/haiku",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux",
+      "displayName": "Build Linux (Ninja)",
+      "configurePreset": "linux",
+      "targets": [
+        "all"
+      ]
+    },
+    {
+      "name": "linux-make",
+      "displayName": "Build Linux (Makefiles)",
+      "configurePreset": "linux-make",
+      "targets": [
+        "all"
+      ]
+    },
+    {
+      "name": "haiku",
+      "displayName": "Build Haiku (Ninja)",
+      "configurePreset": "haiku",
+      "targets": [
+        "all"
+      ]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux",
+      "displayName": "CTest Linux",
+      "configurePreset": "linux",
+      "output": {
+        "shortProgress": true
+      }
+    },
+    {
+      "name": "linux-make",
+      "displayName": "CTest Linux (Makefiles)",
+      "configurePreset": "linux-make",
+      "output": {
+        "shortProgress": true
+      }
+    },
+    {
+      "name": "haiku",
+      "displayName": "CTest Haiku",
+      "configurePreset": "haiku",
+      "output": {
+        "shortProgress": true
+      }
+    }
+  ]
+}

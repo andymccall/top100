@@ -74,6 +74,7 @@ private:
     void onPostBlueSky();
     void onPostMastodon();
     void onUpdateFromOmdb();
+    void onOpenRankDialog();
     void onSortChanged();
     void updateDetails();
 

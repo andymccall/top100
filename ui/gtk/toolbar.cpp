@@ -36,6 +36,14 @@ void Top100GtkWindow::build_toolbar() {
     btn_refresh_->set_icon_widget(*img_ref);
     toolbar_.append(*btn_refresh_);
 
+    // Rank
+    auto btn_rank = Gtk::manage(new Gtk::ToolButton());
+    btn_rank->set_label("Rank");
+    auto img_rank = Gtk::manage(new Gtk::Image());
+    img_rank->set_from_icon_name("favorites", Gtk::ICON_SIZE_LARGE_TOOLBAR);
+    btn_rank->set_icon_widget(*img_rank);
+    toolbar_.append(*btn_rank);
+
     // Update (OMDb)
     btn_update_ = Gtk::manage(new Gtk::ToolButton());
     btn_update_->set_label("Update (OMDb)");
@@ -53,4 +61,9 @@ void Top100GtkWindow::build_toolbar() {
         update_status_movie_count();
     });
     btn_update_->signal_clicked().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_update_current));
+    btn_rank->signal_clicked().connect([this]() {
+        // Lazy include to avoid header in toolbar
+        extern void gtk_open_rank_dialog(Gtk::Window& parent);
+        gtk_open_rank_dialog(*this);
+    });
 }

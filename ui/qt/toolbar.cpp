@@ -16,6 +16,8 @@ void Top100QtWindow::buildToolbar() {
 	addAct_ = toolbar_->addAction(QIcon::fromTheme("list-add"), QStringLiteral("Add"));
 	delAct_ = toolbar_->addAction(QIcon::fromTheme("edit-delete"), QStringLiteral("Delete"));
 	refreshTbAct_ = toolbar_->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Refresh"));
+	// Rank
+	QAction* rankAct = toolbar_->addAction(QIcon::fromTheme("favorites"), QStringLiteral("Rank"));
 	postBskyAct_ = toolbar_->addAction(QIcon::fromTheme("cloud-upload"), QStringLiteral("Post BlueSky"));
 	postMastoAct_ = toolbar_->addAction(QIcon::fromTheme("mail-send"), QStringLiteral("Post Mastodon"));
 	updateAct_ = toolbar_->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Update (OMDb)"));
@@ -24,6 +26,7 @@ void Top100QtWindow::buildToolbar() {
 	connect(addAct_, &QAction::triggered, this, [this]() { onAddMovie(); });
 	connect(delAct_, &QAction::triggered, this, [this]() { onDeleteCurrent(); });
 	connect(refreshTbAct_, &QAction::triggered, this, [this]() { onRefresh(); });
+	connect(rankAct, &QAction::triggered, this, [this]() { onOpenRankDialog(); });
 	connect(postBskyAct_, &QAction::triggered, this, [this]() { onPostBlueSky(); });
 	connect(postMastoAct_, &QAction::triggered, this, [this]() { onPostMastodon(); });
 	connect(updateAct_, &QAction::triggered, this, [this]() { onUpdateFromOmdb(); });

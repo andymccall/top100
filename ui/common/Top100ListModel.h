@@ -302,6 +302,22 @@ public:
         return true;
     }
 
+    /** @brief QML-friendly row count accessor. */
+    Q_INVOKABLE int count() const { return rowCount(); }
+
+    /**
+     * @brief Record a pairwise ranking result between two rows in the current model view.
+     * @param leftRow Index of the left movie in the current model (0..rowCount-1)
+     * @param rightRow Index of the right movie in the current model
+     * @param winner Which movie won: 1 = left wins, 0 = right wins, -1 = pass (no change)
+     * @return true if the operation succeeded (or pass), false on invalid input or storage error
+     *
+     * Applies an Elo-style update to userScore for the two movies, persists to disk,
+     * recomputes ranks, and reloads the model. When winner == -1, no scores are changed
+     * and the function returns true.
+     */
+    Q_INVOKABLE bool recordPairwiseResult(int leftRow, int rightRow, int winner);
+
     /** Post the selected movie to BlueSky synchronously. */
     Q_INVOKABLE bool postToBlueSky(int row) {
         if (row < 0 || row >= static_cast<int>(movies_.size())) return false;
