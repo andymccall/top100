@@ -38,12 +38,17 @@ void Top100GtkWindow::update_poster_scaled() {
 
 // Async fetch poster bytes and update in UI thread
 void Top100GtkWindow::load_poster_async(const std::string& url, const std::string& imdb) {
-    if (url.empty()) { poster_.clear(); poster_pixbuf_original_.reset(); return; }
+    if (url.empty()) { poster_.clear(); poster_pixbuf_original_.reset(); poster_spinner_.stop(); poster_spinner_.hide(); return; }
     current_imdb_id_ = imdb;
+    poster_spinner_.show();
+    poster_spinner_.start();
     std::thread([this, url, imdb]() {
         // Basic GET with reasonable timeout
         auto resp = cpr::Get(cpr::Url{url}, cpr::Timeout{8000});
-        if (resp.error || resp.status_code != 200 || resp.text.empty()) return;
+        if (resp.error || resp.status_code != 200 || resp.text.empty()) {
+            Glib::signal_idle().connect_once([this]() { poster_spinner_.stop(); poster_spinner_.hide(); });
+            return;
+        }
         auto bytes = std::make_shared<std::string>(std::move(resp.text));
         Glib::signal_idle().connect_once([this, bytes, imdb]() {
             // Drop stale results
@@ -54,8 +59,12 @@ void Top100GtkWindow::load_poster_async(const std::string& url, const std::strin
                 loader->close();
                 poster_pixbuf_original_ = loader->get_pixbuf();
                 if (poster_pixbuf_original_) update_poster_scaled(); else poster_.clear();
+                poster_spinner_.stop();
+                poster_spinner_.hide();
             } catch (...) {
                 poster_.clear();
+                poster_spinner_.stop();
+                poster_spinner_.hide();
             }
         });
     }).detach();

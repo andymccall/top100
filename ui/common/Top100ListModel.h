@@ -387,8 +387,59 @@ signals:
     void sortOrderChanged(int sortOrder);
     /** Emitted after model reload finishes (for selection preservation). */
     void reloadCompleted();
+    /** Emitted when an asynchronous OMDb search completes. */
+    void omdbSearchFinished(const QVariantList& results);
+    /** Emitted when an asynchronous OMDb get-by-id completes. */
+    void omdbGetFinished(const QVariantMap& movie);
+    /** Emitted when an asynchronous add-by-imdb completes. */
+    void addMovieFinished(const QString& imdbId, bool success);
 
 private:
     std::vector<Movie> movies_;
     SortOrder currentOrder_ = SortOrder::DEFAULT;
+    // Async watchers (owned by model)
+    QFutureWatcher<QVariantList>* searchWatcher_ { nullptr };
+    QFutureWatcher<QVariantMap>* getWatcher_ { nullptr };
+    QFutureWatcher<bool>* addWatcher_ { nullptr };
+
+public: // Async API (kept public for QML invocation)
+    /** Fire-and-forget asynchronous OMDb search; emits omdbSearchFinished */
+    Q_INVOKABLE void searchOmdbAsync(const QString& query) {
+        if (query.trimmed().isEmpty()) return;
+        if (searchWatcher_) { searchWatcher_->cancel(); searchWatcher_->deleteLater(); searchWatcher_ = nullptr; }
+        searchWatcher_ = new QFutureWatcher<QVariantList>(this);
+        auto fut = QtConcurrent::run([this, query]() { return this->searchOmdb(query); });
+        connect(searchWatcher_, &QFutureWatcher<QVariantList>::finished, this, [this]() {
+            if (!searchWatcher_) return;
+            if (!searchWatcher_->isCanceled()) emit omdbSearchFinished(searchWatcher_->result());
+            searchWatcher_->deleteLater(); searchWatcher_ = nullptr;
+        });
+        searchWatcher_->setFuture(fut);
+    }
+    /** Asynchronous fetch of full OMDb details; emits omdbGetFinished */
+    Q_INVOKABLE void fetchOmdbByIdAsync(const QString& imdbId) {
+        if (imdbId.trimmed().isEmpty()) return;
+        if (getWatcher_) { getWatcher_->cancel(); getWatcher_->deleteLater(); getWatcher_ = nullptr; }
+        getWatcher_ = new QFutureWatcher<QVariantMap>(this);
+        auto fut = QtConcurrent::run([this, imdbId]() { return this->omdbGetByIdMap(imdbId); });
+        connect(getWatcher_, &QFutureWatcher<QVariantMap>::finished, this, [this, imdbId]() {
+            if (!getWatcher_) return;
+            if (!getWatcher_->isCanceled()) emit omdbGetFinished(getWatcher_->result());
+            getWatcher_->deleteLater(); getWatcher_ = nullptr;
+        });
+        getWatcher_->setFuture(fut);
+    }
+    /** Asynchronous add via OMDb ID; emits addMovieFinished */
+    Q_INVOKABLE void addMovieByImdbIdAsync(const QString& imdbId) {
+        if (imdbId.trimmed().isEmpty()) return;
+        if (addWatcher_) { addWatcher_->cancel(); addWatcher_->deleteLater(); addWatcher_ = nullptr; }
+        addWatcher_ = new QFutureWatcher<bool>(this);
+        auto fut = QtConcurrent::run([this, imdbId]() { return this->addMovieByImdbId(imdbId); });
+        connect(addWatcher_, &QFutureWatcher<bool>::finished, this, [this, imdbId]() {
+            if (!addWatcher_) return;
+            if (!addWatcher_->isCanceled()) emit addMovieFinished(imdbId, addWatcher_->result());
+            addWatcher_->deleteLater(); addWatcher_ = nullptr;
+        });
+        addWatcher_->setFuture(fut);
+    }
 };

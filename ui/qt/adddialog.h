@@ -13,8 +13,11 @@ class QPushButton;
 class QListView;
 class QLabel;
 class QTextBrowser;
+#include "spinner.h"
 class QStandardItemModel;
 class QNetworkAccessManager;
+class QFutureWatcherBase; // forward
+template <typename T> class QFutureWatcher;
 
 class Top100ListModel;
 
@@ -37,10 +40,13 @@ private:
     QStandardItemModel* resultsModel_ = nullptr;
     QLabel* titleLbl_ = nullptr;
     QLabel* posterLbl_ = nullptr;
+    SpinnerWidget* posterSpinner_ = nullptr;
     QTextBrowser* plotView_ = nullptr;
     QNetworkAccessManager* nam_ = nullptr;
     QPixmap origPoster_;
     QString selectedImdb_;
+    QFutureWatcher<QVariantList>* searchWatcher_ = nullptr; // async search watcher
+    // spinner controlled directly via posterSpinner_
 
     void doSearch();
     void onResultSelectionChanged();

@@ -15,6 +15,9 @@
 #include <string>
 #include "Movie.h"
 
+// Forward declaration to avoid leaking sqlite3 header to dependents
+struct sqlite3;
+
 /** @defgroup core Core models and containers */
 
 /**
@@ -76,9 +79,12 @@ public:
     void recomputeRanks();
 
 private:
+    // Load all movies from the backing SQLite database (creating schema as needed)
     void load();
+    // Persist in‑memory vector to SQLite (full sync; inexpensive for <=100 rows)
     void save();
 
-    std::string filename;
-    std::vector<Movie> movies;
+    std::string filename;          // Path to SQLite database file (was JSON file)
+    std::vector<Movie> movies;     // In‑memory working set (authoritative ordering = insertion)
+    sqlite3* db = nullptr;         // Open database handle
 };

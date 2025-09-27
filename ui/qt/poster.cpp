@@ -20,6 +20,7 @@ using namespace ui_constants;
 
 void Top100QtWindow::fetchPosterByUrl(const QString& posterUrl) {
     if (!nam_) nam_ = new QNetworkAccessManager(this);
+    if (posterSpinner_) posterSpinner_->start();
     QNetworkRequest req{QUrl(posterUrl)};
     req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Top100/1.0 (Qt)"));
     req.setRawHeader("Accept", "image/*, */*;q=0.8");
@@ -36,7 +37,10 @@ void Top100QtWindow::fetchPosterByUrl(const QString& posterUrl) {
                 QPixmap scaled = pm.scaled(maxW, maxH, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                 posterLabel_->setPixmap(scaled);
             }
+        } else {
+            posterLabel_->clear();
         }
+        if (posterSpinner_) posterSpinner_->stop();
     });
 }
 
@@ -46,6 +50,7 @@ void Top100QtWindow::fetchPosterViaOmdb(const QString& imdb) {
         QString poster = watcher->result();
         watcher->deleteLater();
         if (!poster.isEmpty()) fetchPosterByUrl(poster);
+        else { if (posterSpinner_) posterSpinner_->stop(); }
     });
     QFuture<QString> fut = QtConcurrent::run([imdb]() -> QString {
         try {

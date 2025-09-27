@@ -36,12 +36,23 @@ option(TOP100_UI_QT "Build the Qt (cross-platform) UI" OFF)
 option(TOP100_UI_KDE "Build the KDE-enhanced (Kirigami) UI" OFF)
 option(TOP100_UI_GTK "Build the GTK (gtkmm) UI" OFF)
 option(TOP100_UI_HAIKU "Build the Haiku (BeAPI) UI" OFF)
+option(TOP100_UI_ANDROID "Build the Android (Qt Quick) UI" OFF)
 
 # --- Core Library ---
 # Build as STATIC to avoid STL crossing shared library boundaries in tests/CLI
+find_package(SQLite3 QUIET)
+if(SQLite3_FOUND)
+  message(STATUS "Found SQLite3 ${SQLite3_VERSION}")
+endif()
 add_library(top100 STATIC lib/top100.cpp)
 target_include_directories(top100 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-target_link_libraries(top100 PUBLIC nlohmann_json::nlohmann_json)
+if(SQLite3_FOUND)
+  target_link_libraries(top100 PUBLIC nlohmann_json::nlohmann_json SQLite::SQLite3)
+else()
+  target_link_libraries(top100 PUBLIC nlohmann_json::nlohmann_json)
+  target_compile_definitions(top100 PRIVATE TOP100_NO_SQLITE)
+  message(WARNING "SQLite3 not found - falling back to legacy JSON persistence (TOP100_NO_SQLITE)")
+endif()
 
 # Config helpers
 add_library(top100_config STATIC lib/config.cpp)
@@ -125,6 +136,11 @@ if(TOP100_ENABLE_TESTS)
   add_test(NAME ranking_recompute_and_sort COMMAND test_ranking --run_test=RankingSuite/recompute_ranks_and_sorting)
   add_test(NAME ranking_elo_update COMMAND test_ranking --run_test=RankingSuite/elo_update_changes_scores_and_order)
 
+  # SQLite backend test (skipped automatically if fallback active)
+  add_executable(test_sqlite_backend tests/test_sqlite_backend.cpp)
+  target_link_libraries(test_sqlite_backend PRIVATE top100 Boost::unit_test_framework)
+  add_test(NAME sqlite_backend_create_and_persist COMMAND test_sqlite_backend)
+
   # Config tests
   add_executable(test_config tests/test_config.cpp)
   target_link_libraries(test_config PRIVATE top100_config Boost::unit_test_framework nlohmann_json::nlohmann_json)
@@ -152,7 +168,7 @@ if(TOP100_ENABLE_TESTS)
   add_test(NAME ui_strings_constants COMMAND test_ui_strings)
 
   # Expand aggregate tests_build dependencies to include all tests
-  add_dependencies(tests_build test_ranking test_config test_config_utils test_menu test_ui_strings)
+  add_dependencies(tests_build test_ranking test_config test_config_utils test_menu test_ui_strings test_sqlite_backend)
 endif()
 
 # --- Documentation (Doxygen) ---
@@ -180,6 +196,13 @@ if(TOP100_UI_QT OR TOP100_UI_KDE)
   set(CMAKE_AUTOUIC ON)
 endif()
 
+if(TOP100_UI_ANDROID)
+  # Enable Qt automation for Android UI as well
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTORCC ON)
+  set(CMAKE_AUTOUIC ON)
+endif()
+
 if(TOP100_UI_QT)
   # Prefer Qt6, fall back to Qt5
   find_package(Qt6 QUIET COMPONENTS Widgets Concurrent Network)
@@ -189,6 +212,7 @@ if(TOP100_UI_QT)
     ui/qt/window.cpp
     ui/qt/handlers.cpp
     ui/qt/poster.cpp
+    ui/qt/spinner.cpp ui/qt/spinner.h
     ui/qt/menu.cpp
     ui/qt/toolbar.cpp
     ui/qt/adddialog.cpp
@@ -204,6 +228,7 @@ if(TOP100_UI_QT)
     ui/qt/window.cpp
     ui/qt/handlers.cpp
     ui/qt/poster.cpp
+    ui/qt/spinner.cpp ui/qt/spinner.h
     ui/qt/menu.cpp
     ui/qt/toolbar.cpp
     ui/qt/adddialog.cpp
@@ -215,6 +240,40 @@ if(TOP100_UI_QT)
   endif()
 endif()
 
+# ---------------------------------------------------------------------------
+# Android (generic Qt Quick Controls) UI
+# ---------------------------------------------------------------------------
+if(TOP100_UI_ANDROID)
+  # Prefer Qt6; fall back to Qt5
+  find_package(Qt6 QUIET COMPONENTS Quick Qml Concurrent Network)
+  if(Qt6_FOUND)
+    set(_qt_android_targets Qt6::Quick Qt6::Qml Qt6::Concurrent Qt6::Network)
+    set(_qt_android_major 6)
+  else()
+    find_package(Qt5 REQUIRED COMPONENTS Quick Qml Concurrent Network)
+    set(_qt_android_targets Qt5::Quick Qt5::Qml Qt5::Concurrent Qt5::Network)
+    set(_qt_android_major 5)
+  endif()
+
+  # Resources for Android UI
+  if(_qt_android_major EQUAL 6)
+    qt_add_resources(android_qml_qrc ui/android/resources.qrc)
+  else()
+    qt5_add_resources(android_qml_qrc ui/android/resources.qrc)
+  endif()
+
+  add_executable(top100_android
+    ui/android/main.cpp
+    ui/common/Top100ListModel.h ui/common/Top100ListModel.cpp
+    ${android_qml_qrc})
+  target_link_libraries(top100_android PRIVATE ${_qt_android_targets} top100 top100_config top100_config_utils top100_services)
+  target_include_directories(top100_android PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ui/common ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+  target_compile_features(top100_android PRIVATE cxx_std_17)
+  set_target_properties(top100_android PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE FALSE)
+
+  message(STATUS "Android UI target created (top100_android). To build for an actual Android device, configure with an Android Qt toolchain & SDK/NDK; this desktop build is for development only.")
+endif()
+
 if(TOP100_UI_KDE)
   # KDE Kirigami UI (QML)
   # Prefer Qt6 Quick/Qml first; only fall back to Qt5 if Qt6 isn't available.
@@ -222,10 +281,10 @@ if(TOP100_UI_KDE)
   set(_qt_quick_targets "")
   set(_qt_major "")
 
-  find_package(Qt6 QUIET COMPONENTS Quick Qml Concurrent)
+  find_package(Qt6 QUIET COMPONENTS Quick Qml Concurrent Network)
   if(Qt6_FOUND)
     set(_qt_major 6)
-    set(_qt_quick_targets Qt6::Quick Qt6::Qml Qt6::Concurrent)
+  set(_qt_quick_targets Qt6::Quick Qt6::Qml Qt6::Concurrent Qt6::Network)
     # Link to Kirigami2 target if available for KF6; otherwise proceed with runtime QML module
     find_package(KF6Kirigami2 QUIET)
     if(KF6Kirigami2_FOUND)
@@ -235,9 +294,9 @@ if(TOP100_UI_KDE)
     endif()
   else()
     # Qt6 not found; require Qt5 Quick/Qml and optionally link KF5 Kirigami
-  find_package(Qt5 REQUIRED COMPONENTS Quick Qml Concurrent)
+  find_package(Qt5 REQUIRED COMPONENTS Quick Qml Concurrent Network)
     set(_qt_major 5)
-  set(_qt_quick_targets Qt5::Quick Qt5::Qml Qt5::Concurrent)
+  set(_qt_quick_targets Qt5::Quick Qt5::Qml Qt5::Concurrent Qt5::Network)
     find_package(KF5Kirigami2 QUIET)
     if(KF5Kirigami2_FOUND)
       set(_kirigami_target KF5::Kirigami2)

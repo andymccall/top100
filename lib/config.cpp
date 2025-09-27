@@ -35,7 +35,7 @@ std::string getConfigPath() {
 }
 
 std::string getDefaultDataPath() {
-    fs::path p = fs::path(getHomeDir()) / "top100" / "top100.json";
+    fs::path p = fs::path(getHomeDir()) / "top100" / "top100.db"; // switched to SQLite database file
     return p.string();
 }
 

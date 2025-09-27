@@ -33,7 +33,7 @@ void addFromOmdb(Top100& top100, const std::string& apiKey) {
 
     std::cout << "\nResults:\n";
     for (size_t i = 0; i < results.size(); ++i) {
-        std::cout << (i + 1) << ") " << results[i].title << " (" << results[i].year << ") [" << results[i].imdbID << "]\n";
+        std::cout << (i + 1) << ") " << results[i].title << " (" << results[i].year << ")\n";
     }
     std::cout << "Choose a number to add (or 0 to cancel): ";
     size_t choice = 0;

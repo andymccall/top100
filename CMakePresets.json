@@ -27,6 +27,16 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "android",
+      "displayName": "Android (Ninja → build/android)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/android",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "TOP100_UI_ANDROID": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -53,6 +63,14 @@
       "targets": [
         "all"
       ]
+    },
+    {
+      "name": "android",
+      "displayName": "Build Android (Ninja)",
+      "configurePreset": "android",
+      "targets": [
+        "all"
+      ]
     }
   ],
   "testPresets": [
@@ -76,6 +94,14 @@
       "name": "haiku",
       "displayName": "CTest Haiku",
       "configurePreset": "haiku",
+      "output": {
+        "shortProgress": true
+      }
+    },
+    {
+      "name": "android",
+      "displayName": "CTest Android (hosted)",
+      "configurePreset": "android",
       "output": {
         "shortProgress": true
       }
