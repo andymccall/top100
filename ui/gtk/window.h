@@ -15,6 +15,9 @@
 
 namespace Gdk { class Pixbuf; }
 
+/**
+ * @brief GTK main window showing the Top100 list and details.
+ */
 class Top100GtkWindow : public Gtk::Window {
 public:
     Top100GtkWindow();

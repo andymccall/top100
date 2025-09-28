@@ -16,6 +16,7 @@
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
+/** @brief Local alias for nlohmann::json used in Mastodon helpers. */
 using json = nlohmann::json;
 
 static std::string joinUrl(const std::string& base, const std::string& path) {

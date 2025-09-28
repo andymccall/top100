@@ -113,6 +113,7 @@ In addition to the CLI, you can build optional desktop UIs:
 - GTK UI — gtkmm 3 (GNOME‑friendly) with the same two‑pane layout and Add dialog
 - KDE UI — Kirigami/QML frontend with KDE Frameworks integration
  - Haiku UI — BeAPI-based minimal frontend (experimental)
+ - Android UI — QML/Kirigami-based mobile variant (experimental)
 
 All UIs are disabled by default. Enable with CMake options:
 
@@ -150,12 +151,14 @@ cmake --build build/haiku --target top100_haiku
 If both are enabled, both executables are built. The UIs link the same core libraries; we’ll progressively wire features without duplicating logic.
 
 Consistent UI strings and behavior:
-- Both UIs read common display text (app names, window titles, hello text) from `ui/common/strings.h` so wording stays in sync.
+- UIs read common display text (app names, window titles, labels) from `ui/common/strings.h` so wording stays in sync.
 - A unit test named `ui_strings_constants` verifies these constants.
-- The Add dialog UX is kept in parity across Qt/GTK/KDE: a larger centered window titled “Add Movie (OMDb)” with a search row (label, entry with placeholder “title keyword”, and Search button), results list on the left, and details (title/year/poster/plot) on the right. Bottom row has Enter manually, Cancel, Add (Add is default).
+- The Add dialog UX is kept in parity across Qt/GTK/KDE/Android: a larger centered window/dialog titled “Add Movie (OMDb)” with a search row (label, entry with placeholder “title keyword”, and Search button), results list on the left, and details (title/year/poster/plot) on the right.
+- Results show only “Title (Year)” (IMDb IDs are not shown in the list).
+- The Add button is enabled only after selecting a result. A “Cancel” button appears on the left; “Add manually” (disabled or not implemented in some UIs) and “Add” are on the right.
 
 
-## �🖥️ CLI usage
+## 🖥️ CLI usage
 
 By default, the first run creates `~/.top100_config.json` and stores your data at `~/top100/top100.json` (the folder is created if needed). You can change the data file path from the menu at any time. On startup, ranks are recomputed from scores to keep things consistent.
 
@@ -163,7 +166,7 @@ Common actions:
 - Add a movie manually
 - Remove a movie
 - List movies (by default, by year, alphabetically, by rank, or by score)
-- Add from OMDb (search, pick, and add) — shown only when OMDb is enabled
+- Add from OMDb (search, pick, and add) — shown only when OMDb is enabled. Search results list shows only Title and Year.
 - View details of a selected movie
 - Compare two random movies repeatedly to evolve your ranking (press `q` to stop)
  - Post a movie to BlueSky (configure once, then post)
@@ -203,7 +206,7 @@ Mastodon:
 - Posting uploads the poster via multipart media, then posts the status with the attached image.
 
 Post customization:
-- Header text default: “I’d like to share one of my top 100 #movies!”
+- Header text default: “I’d like to share one of my top 100 \#movies!”
 - Footer text default: “Posted with Top 100!”
 - You can edit both from the CLI (they may be empty to omit).
 
@@ -296,7 +299,7 @@ Defaults on first run:
 - `omdbEnabled`: `false`, `omdbApiKey`: empty
 - `blueSkyEnabled`: `false`, `blueSkyService`: `https://bsky.social`
 - `mastodonEnabled`: `false`, `mastodonInstance`: `https://mastodon.social`
-- `postHeaderText`: “I’d like to share one of my top 100 #movies!”, `postFooterText`: “Posted with Top 100!”
+- `postHeaderText`: “I’d like to share one of my top 100 \#movies!”, `postFooterText`: “Posted with Top 100!”
 
 From the CLI you can:
 - Configure OMDb API key (verifies the key and enables OMDb if valid)

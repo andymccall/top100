@@ -13,12 +13,22 @@
 
 namespace Gdk { class Pixbuf; }
 
+/**
+ * @brief GTK dialog to search OMDb, preview details, and add a movie.
+ */
 class Top100GtkAddDialog : public Gtk::Dialog {
 public:
+    /** @brief Construct OMDb search/add dialog.
+     *  @param parent Parent window */
     Top100GtkAddDialog(Gtk::Window& parent);
+    /** @return Selected IMDb ID or empty string. */
     std::string selected_imdb() const { return selected_imdb_; }
 
 protected:
+    /**
+     * @brief Rescale poster after size allocation.
+     * @param allocation New widget allocation provided by GTK
+     */
     void on_size_allocate(Gtk::Allocation& allocation) override;
 
 private:

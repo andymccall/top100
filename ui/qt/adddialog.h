@@ -21,14 +21,32 @@ template <typename T> class QFutureWatcher;
 
 class Top100ListModel;
 
+/**
+ * @brief Qt dialog to search OMDb, preview details, and add a movie.
+ */
 class Top100QtAddDialog : public QDialog {
     Q_OBJECT
 public:
+    /**
+     * @brief Construct the OMDb search/add dialog.
+     * @param parent Parent widget
+     * @param model Shared Top100 list model
+     */
     Top100QtAddDialog(QWidget* parent, Top100ListModel* model);
+    /** @brief IMDb ID selected from search results (empty if none).
+     *  @return Selected IMDb ID string. */
     QString selectedImdb() const { return selectedImdb_; }
 
 protected:
+    /**
+     * @brief Ensure initial focus and layout after show.
+     * @param ev Show event
+     */
     void showEvent(QShowEvent* ev) override;
+    /**
+     * @brief Rescale poster on resize.
+     * @param ev Resize event
+     */
     void resizeEvent(QResizeEvent* ev) override;
 
 private:

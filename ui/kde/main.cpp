@@ -59,6 +59,12 @@ static QStringList fetchTop100Titles() {
     return titles;
 }
 
+/**
+ * @brief KDE/QML application entry point.
+ * @param argc Argument count
+ * @param argv Argument vector
+ * @return Exit code
+ */
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     app.setApplicationName(ui_strings::kAppName);

@@ -15,18 +15,42 @@
 #include <optional>
 #include "Movie.h"
 
-/** @ingroup services */
+/**
+ * @brief Basic OMDb search hit.
+ * @ingroup services
+ */
 struct OmdbSearchResult {
+    /** Movie title */
     std::string title;
+    /** Release year */
     int year;
+    /** IMDb identifier (e.g., tt0133093) */
     std::string imdbID;
+    /** Type (usually "movie"; kept for completeness) */
     std::string type;
 };
 
-/** Query OMDb by title keyword and return basic results. @ingroup services */
+/**
+ * @brief Query OMDb by title keyword and return basic results.
+ * @param apiKey OMDb API key
+ * @param query Title keyword
+ * @return Vector of OmdbSearchResult
+ * @ingroup services
+ */
 std::vector<OmdbSearchResult> omdbSearch(const std::string& apiKey, const std::string& query);
 
-/** Fetch full details for a movie by imdbID and map to Movie. @ingroup services */
+/**
+ * @brief Fetch full details for a movie by imdbID and map to Movie.
+ * @param apiKey OMDb API key
+ * @param imdbID IMDb identifier
+ * @return Movie on success
+ * @ingroup services
+ */
 std::optional<Movie> omdbGetById(const std::string& apiKey, const std::string& imdbID);
-/** Verify OMDb API key by issuing a simple request. @ingroup services */
+/**
+ * @brief Verify OMDb API key by issuing a simple request.
+ * @param apiKey OMDb API key
+ * @return true if the key appears valid
+ * @ingroup services
+ */
 bool omdbVerifyKey(const std::string& apiKey);

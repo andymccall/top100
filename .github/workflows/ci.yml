@@ -15,6 +15,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake gcc g++ ninja-build libssl-dev pkg-config \
+            libboost-test-dev \
             qtbase5-dev qtdeclarative5-dev qml-module-qtquick-controls2 qml-module-qtquick-layouts \
             qml-module-qtgraphicaleffects qml-module-qtqml-models2 qml-module-qtquick-window2 \
             qml-module-qtquick2 libgtkmm-3.0-dev
@@ -24,6 +25,32 @@ jobs:
         run: cmake --build --preset linux --parallel
       - name: Test
         run: ctest --preset linux --output-on-failure
+
+  docs-warnings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ doxygen graphviz libssl-dev
+      - name: Configure (docs only)
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTOP100_ENABLE_TESTS=OFF
+      - name: Build docs
+        run: cmake --build build --target docs --parallel
+      - name: Fail if Doxygen warnings exist
+        run: |
+          if [ -s doxygen.warnings ]; then
+            echo "Doxygen produced warnings:" >&2
+            cat doxygen.warnings >&2
+            exit 1
+          fi
+      - name: Upload doxygen warnings (artifact on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-warnings
+          path: doxygen.warnings
 
   lint-includes:
     runs-on: ubuntu-latest
