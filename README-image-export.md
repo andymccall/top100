@@ -1,6 +1,6 @@
 # Image Export Feature
 
-This branch adds a library-level function to export a PNG image of your Top 100 list as a 10×10 grid with a heading.
+This branch adds a library-level function to export a PNG image of your Top 100 list as a 5×20 grid (5 columns × 20 rows) with a heading.
 
 API:
 - bool exportTop100Image(const std::vector<Movie>& movies, const std::string& outPath, const std::string& heading = "My Top 100 Movies");
