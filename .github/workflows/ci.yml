@@ -15,7 +15,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake gcc g++ ninja-build libssl-dev pkg-config \
-            libboost-test-dev \
+            libboost-test-dev libboost-all-dev \
             qtbase5-dev qtdeclarative5-dev qml-module-qtquick-controls2 qml-module-qtquick-layouts \
             qml-module-qtgraphicaleffects qml-module-qtqml-models2 qml-module-qtquick-window2 \
             qml-module-qtquick2 libgtkmm-3.0-dev
@@ -61,7 +61,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y iwyu cmake gcc g++ ninja-build pkg-config
       - name: Configure with IWYU (presets)
-        run: cmake --preset linux -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=iwyu
+        run: cmake --preset linux -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=iwyu -DTOP100_ENABLE_TESTS=OFF
       - name: Run IWYU (best-effort)
         run: cmake --build --preset linux --parallel || true
       - name: Summarize IWYU suggestions
