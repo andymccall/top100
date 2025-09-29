@@ -36,6 +36,14 @@ void Top100GtkWindow::build_toolbar() {
     btn_refresh_->set_icon_widget(*img_ref);
     toolbar_.append(*btn_refresh_);
 
+    // Export Image
+    auto btn_export = Gtk::manage(new Gtk::ToolButton());
+    btn_export->set_label("Export Image");
+    auto img_export = Gtk::manage(new Gtk::Image());
+    img_export->set_from_icon_name("document-export", Gtk::ICON_SIZE_LARGE_TOOLBAR);
+    btn_export->set_icon_widget(*img_export);
+    toolbar_.append(*btn_export);
+
     // Rank
     auto btn_rank = Gtk::manage(new Gtk::ToolButton());
     btn_rank->set_label("Rank");
@@ -60,6 +68,7 @@ void Top100GtkWindow::build_toolbar() {
         reload_model(current_selected_imdb());
         update_status_movie_count();
     });
+    btn_export->signal_clicked().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_export_image));
     btn_update_->signal_clicked().connect(sigc::mem_fun(*this, &Top100GtkWindow::on_update_current));
     btn_rank->signal_clicked().connect([this]() {
         // Lazy include to avoid header in toolbar

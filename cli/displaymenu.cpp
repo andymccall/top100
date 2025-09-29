@@ -50,6 +50,7 @@ void displayMenu(bool omdbEnabled, bool blueSkyEnabled, bool mastodonEnabled)
     } else {
         std::cout << "9. Configure Mastodon account\n";
     }
+    std::cout << "e. Export image (PNG)\n";
     std::cout << "0. Edit post header/footer text\n";
     std::cout << "q. Quit\n";
     std::cout << "Enter your choice: ";

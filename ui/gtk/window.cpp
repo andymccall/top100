@@ -155,6 +155,7 @@ Top100GtkWindow::Top100GtkWindow()
 
     reload_model();
     update_status_movie_count();
+    update_add_enabled_state();
     show_all_children();
 }
 
@@ -163,4 +164,32 @@ void Top100GtkWindow::update_status_movie_count() {
     statusbar_.pop(status_ctx_movies_);
     const auto n = static_cast<unsigned>(list_store_->children().size());
     statusbar_.push(std::to_string(n) + (n == 1 ? " movie" : " movies"), status_ctx_movies_);
+}
+
+void Top100GtkWindow::update_add_enabled_state() {
+    const bool full = list_store_ && list_store_->children().size() >= 100;
+    if (btn_add_) {
+        btn_add_->set_sensitive(!full);
+        btn_add_->set_tooltip_text(full ? "List full, remove a movie first" : "");
+    }
+    // Also try to update the File->Add Movie menu item if present
+    // We search the first submenu of the File menu for the first item labeled "Add Movie"
+    for (auto& item : menubar_.get_children()) {
+        auto mi = dynamic_cast<Gtk::MenuItem*>(item);
+        if (!mi) continue;
+        if (mi->get_label().find("File") != std::string::npos) {
+            Gtk::Menu* submenu = mi->get_submenu();
+            if (!submenu) continue;
+            for (auto& ci : submenu->get_children()) {
+                auto ami = dynamic_cast<Gtk::MenuItem*>(ci);
+                if (!ami) continue;
+                if (ami->get_label().find("Add Movie") != std::string::npos) {
+                    ami->set_sensitive(!full);
+                    ami->set_tooltip_text(full ? "List full, remove a movie first" : "");
+                    break;
+                }
+            }
+            break;
+        }
+    }
 }

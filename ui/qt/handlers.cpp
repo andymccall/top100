@@ -23,6 +23,8 @@
 #include "../../lib/omdb.h"
 #include "../common/constants.h"
 #include "rankdialog.h"
+#include "../../lib/image_export.h"
+#include <QFileDialog>
 
 using namespace ui_constants;
 
@@ -83,6 +85,10 @@ void Top100QtWindow::updateDetails() {
 }
 
 void Top100QtWindow::onAddMovie() {
+    if (model_ && model_->rowCount() >= 100) {
+        QMessageBox::information(this, QStringLiteral("Add Movie"), QStringLiteral("List full, remove a movie first"));
+        return;
+    }
     Top100QtAddDialog dlg(this, model_);
     if (dlg.exec() == QDialog::Accepted) {
         const QString imdb = dlg.selectedImdb();
@@ -135,6 +141,34 @@ void Top100QtWindow::onUpdateFromOmdb() {
     } else {
         QMessageBox::warning(this, QStringLiteral("Update"), QStringLiteral("Update failed."));
     }
+}
+
+void Top100QtWindow::onExportImage() {
+    if (!model_ || model_->rowCount() == 0) {
+        QMessageBox::information(this, QStringLiteral("Export Image"), QStringLiteral("No movies to export."));
+        return;
+    }
+    // Default to ~/Pictures/top100.png if available
+    QString def = QDir::homePath() + "/Pictures/top100.png";
+    if (!QFileInfo::exists(QDir::homePath() + "/Pictures")) def = QDir::homePath() + "/pictures/top100.png";
+    if (!QFileInfo::exists(QDir::homePath() + "/pictures")) def = QDir::homePath() + "/top100.png";
+    QString path = QFileDialog::getSaveFileName(this, QStringLiteral("Export Image"), def, QStringLiteral("PNG Images (*.png)"));
+    if (path.isEmpty()) return;
+    // Gather movies in current order
+    std::vector<Movie> mv;
+    mv.reserve(static_cast<size_t>(model_->rowCount()));
+    for (int i = 0; i < model_->rowCount() && i < 100; ++i) {
+        QVariantMap m = model_->get(i);
+        Movie one;
+        one.title = m.value("title").toString().toStdString();
+        one.year = m.value("year").toInt();
+        one.posterUrl = m.value("posterUrl").toString().toStdString();
+        one.imdbID = m.value("imdbID").toString().toStdString();
+        mv.push_back(std::move(one));
+    }
+    bool ok = exportTop100Image(mv, path.toStdString(), "My Top 100 Movies");
+    if (ok) statusBar()->showMessage(QStringLiteral("Exported image."), 3000);
+    else QMessageBox::warning(this, QStringLiteral("Export Image"), QStringLiteral("Failed to export image (missing Cairo?)."));
 }
 
 void Top100QtWindow::onOpenRankDialog() {
