@@ -313,7 +313,7 @@ bool exportTop100Image(const std::vector<Movie>& movies,
         // naive elide: trim until fits within cellW - 8
         while (ext.width > cellW - 8 && t.size() > 4) {
             t.pop_back();
-            t.back() = '.'; // ensure something changes
+            if (!t.empty()) t.back() = '.'; // ensure something changes
             cairo_text_extents(cr, t.c_str(), &ext);
         }
         double ty = y0 + cellH - 10;
