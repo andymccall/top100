@@ -40,10 +40,19 @@
 #include "../../lib/posting.h"
 #include "../../lib/omdb.h"
 
+/**
+ * @brief Shared Qt list model exposing Top100 movies to Qt Widgets and KDE UIs.
+ */
 class Top100ListModel : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(int sortOrder READ sortOrder WRITE setSortOrder NOTIFY sortOrderChanged)
 public:
+    /*! \property Top100ListModel::sortOrder
+        \brief Current sort order as an int mapping to the SortOrder enum.
+
+        Values correspond to SortOrder::{DEFAULT,BY_YEAR,ALPHABETICAL,BY_USER_RANK,BY_USER_SCORE}.
+        Setting this persists to the config and triggers a reload().
+    */
     /** Model data roles available to views and QML. */
     enum Roles {
         TitleRole = Qt::UserRole + 1,
@@ -59,7 +68,10 @@ public:
     };
     Q_ENUM(Roles)
 
-    /** Construct and immediately load the current Top100 dataset. */
+    /**
+     * @brief Construct and immediately load the current Top100 dataset.
+     * @param parent Optional QObject parent
+     */
     explicit Top100ListModel(QObject* parent = nullptr)
         : QAbstractListModel(parent) {
         // Initialize sort order from config
@@ -73,11 +85,22 @@ public:
         reload();
     }
 
+    /**
+     * @brief Number of rows in the model.
+     * @param parent Unused; returns 0 for non-root indices
+     * @return Row count for root
+     */
     int rowCount(const QModelIndex& parent = QModelIndex()) const override {
         if (parent.isValid()) return 0;
         return static_cast<int>(movies_.size());
     }
 
+    /**
+     * @brief Provide data for roles.
+     * @param index Model index
+     * @param role Role id (Qt::DisplayRole or custom roles)
+     * @return QVariant matching the role or empty on invalid
+     */
     QVariant data(const QModelIndex& index, int role) const override {
         if (!index.isValid() || index.row() < 0 || index.row() >= static_cast<int>(movies_.size()))
             return {};
@@ -109,6 +132,9 @@ public:
         }
     }
 
+    /** @brief Expose role names for QML bindings.
+     *  @return Map of role id to role name
+     */
     QHash<int, QByteArray> roleNames() const override {
         QHash<int, QByteArray> r;
         r[Qt::DisplayRole] = "display";
@@ -144,9 +170,14 @@ public:
     }
 
     // Current sort order as int (maps to SortOrder enum). Useful for QML bindings.
+    /** @return The current sort order value (see SortOrder enum). */
     int sortOrder() const { return static_cast<int>(currentOrder_); }
 
-    /** Set sort order (0..4) corresponding to SortOrder enum; triggers reload(). */
+    /**
+     * @brief Set sort order.
+     * @param order One of SortOrder enum values (cast to int)
+     * @note Triggers config save and model reload.
+     */
     Q_INVOKABLE void setSortOrder(int order) {
         SortOrder newOrder = currentOrder_;
         switch (order) {
@@ -169,8 +200,11 @@ public:
         reload();
     }
 
-    /** Convenience accessor for QML/details panes. Returns a QVariantMap with keys:
-     *  title, year, rank, posterUrl, plotFull. Returns empty map for invalid row. */
+    /**
+     * @brief Convenience accessor for QML/details panes.
+     * @param row Row index in the model (0..rowCount-1)
+     * @return Map with keys: title, year, rank, posterUrl, plotFull, imdbID, director, actors, genres, runtimeMinutes; empty if row invalid
+     */
     Q_INVOKABLE QVariantMap get(int row) const {
         QVariantMap m;
         if (row < 0 || row >= static_cast<int>(movies_.size())) return m;
@@ -196,7 +230,11 @@ public:
         return m;
     }
 
-    /** Add a movie by imdbID using OMDb lookup; appends to end of list and refreshes. */
+    /**
+     * @brief Add a movie by IMDb ID using OMDb.
+     * @param imdbId IMDb identifier (e.g., tt0133093)
+     * @return true on success, false on error
+     */
     Q_INVOKABLE bool addMovieByImdbId(const QString& imdbId) {
         try {
             AppConfig cfg = loadConfig();
@@ -214,7 +252,11 @@ public:
         return true;
     }
 
-    /** Delete a movie by imdbID; refreshes list. */
+    /**
+     * @brief Delete a movie by IMDb ID.
+     * @param imdbId IMDb identifier
+     * @return true if a movie was removed
+     */
     Q_INVOKABLE bool deleteByImdbId(const QString& imdbId) {
         try {
             AppConfig cfg = loadConfig();
@@ -227,7 +269,11 @@ public:
         return true;
     }
 
-    /** Delete a movie by title (first match); refreshes list. */
+    /**
+     * @brief Delete a movie by title (first match).
+     * @param title Title to remove
+     * @return true if a movie was removed
+     */
     Q_INVOKABLE bool deleteByTitle(const QString& title) {
         try {
             AppConfig cfg = loadConfig();
@@ -238,7 +284,11 @@ public:
         return true;
     }
 
-    /** Search OMDb for a query and return a list of { title, year, imdbID } objects. */
+    /**
+     * @brief Search OMDb.
+     * @param query Search string
+     * @return QVariantList of maps with keys: title, year, imdbID
+     */
     Q_INVOKABLE QVariantList searchOmdb(const QString& query) {
         QVariantList out;
         try {
@@ -258,8 +308,11 @@ public:
         return out;
     }
 
-    /** Fetch full OMDb details by IMDb ID and return a QVariantMap with keys:
-     *  title, year, posterUrl, plotShort, plotFull. Returns empty map on error. */
+    /**
+     * @brief Fetch full OMDb details by IMDb ID.
+     * @param imdbId IMDb identifier (e.g., tt0133093)
+     * @return Map with: title, year, posterUrl, plotShort, plotFull; empty on error
+     */
     Q_INVOKABLE QVariantMap omdbGetByIdMap(const QString& imdbId) const {
         QVariantMap m;
         try {
@@ -278,7 +331,11 @@ public:
         }
         return m;
     }
-    /** Update an existing movie by IMDb ID from OMDb and refresh. */
+    /**
+     * @brief Update an existing movie from OMDb using its IMDb ID.
+     * @param imdbId IMDb identifier
+     * @return true on success, false on error
+     */
     Q_INVOKABLE bool updateFromOmdbByImdbId(const QString& imdbId) {
         try {
             AppConfig cfg = loadConfig();
@@ -302,7 +359,8 @@ public:
         return true;
     }
 
-    /** @brief QML-friendly row count accessor. */
+    /** @brief QML-friendly row count accessor.
+     *  @return Number of rows in the model. */
     Q_INVOKABLE int count() const { return rowCount(); }
 
     /**
@@ -318,7 +376,11 @@ public:
      */
     Q_INVOKABLE bool recordPairwiseResult(int leftRow, int rightRow, int winner);
 
-    /** Post the selected movie to BlueSky synchronously. */
+    /**
+     * @brief Post a movie to BlueSky synchronously.
+     * @param row Model row index of the movie
+     * @return true if posted successfully
+     */
     Q_INVOKABLE bool postToBlueSky(int row) {
         if (row < 0 || row >= static_cast<int>(movies_.size())) return false;
         try {
@@ -331,7 +393,11 @@ public:
         }
     }
 
-    /** Post the selected movie to Mastodon synchronously. */
+    /**
+     * @brief Post a movie to Mastodon synchronously.
+     * @param row Model row index
+     * @return true if posted successfully
+     */
     Q_INVOKABLE bool postToMastodon(int row) {
         if (row < 0 || row >= static_cast<int>(movies_.size())) return false;
         try {
@@ -344,7 +410,11 @@ public:
         }
     }
 
-    /** Post to BlueSky asynchronously; emits postingFinished when done. */
+    /**
+     * @brief Post to BlueSky asynchronously.
+     * @param row Model row index
+     * @note Emits postingFinished(service,row,success)
+     */
     Q_INVOKABLE void postToBlueSkyAsync(int row) {
         if (row < 0 || row >= static_cast<int>(movies_.size())) return;
         AppConfig cfg;
@@ -361,7 +431,11 @@ public:
         watcher->setFuture(future);
     }
 
-    /** Post to Mastodon asynchronously; emits postingFinished when done. */
+    /**
+     * @brief Post to Mastodon asynchronously.
+     * @param row Model row index
+     * @note Emits postingFinished(service,row,success)
+     */
     Q_INVOKABLE void postToMastodonAsync(int row) {
         if (row < 0 || row >= static_cast<int>(movies_.size())) return;
         AppConfig cfg;
@@ -387,8 +461,71 @@ signals:
     void sortOrderChanged(int sortOrder);
     /** Emitted after model reload finishes (for selection preservation). */
     void reloadCompleted();
+    /** Emitted when an asynchronous OMDb search completes. */
+    void omdbSearchFinished(const QVariantList& results);
+    /** Emitted when an asynchronous OMDb get-by-id completes. */
+    void omdbGetFinished(const QVariantMap& movie);
+    /** Emitted when an asynchronous add-by-imdb completes. */
+    void addMovieFinished(const QString& imdbId, bool success);
 
 private:
     std::vector<Movie> movies_;
     SortOrder currentOrder_ = SortOrder::DEFAULT;
+    // Async watchers (owned by model)
+    QFutureWatcher<QVariantList>* searchWatcher_ { nullptr };
+    QFutureWatcher<QVariantMap>* getWatcher_ { nullptr };
+    QFutureWatcher<bool>* addWatcher_ { nullptr };
+
+public: // Async API (kept public for QML invocation)
+    /**
+     * @brief Fire-and-forget asynchronous OMDb search.
+     * @param query Search string
+     * @note Emits omdbSearchFinished(results)
+     */
+    Q_INVOKABLE void searchOmdbAsync(const QString& query) {
+        if (query.trimmed().isEmpty()) return;
+        if (searchWatcher_) { searchWatcher_->cancel(); searchWatcher_->deleteLater(); searchWatcher_ = nullptr; }
+        searchWatcher_ = new QFutureWatcher<QVariantList>(this);
+        auto fut = QtConcurrent::run([this, query]() { return this->searchOmdb(query); });
+        connect(searchWatcher_, &QFutureWatcher<QVariantList>::finished, this, [this]() {
+            if (!searchWatcher_) return;
+            if (!searchWatcher_->isCanceled()) emit omdbSearchFinished(searchWatcher_->result());
+            searchWatcher_->deleteLater(); searchWatcher_ = nullptr;
+        });
+        searchWatcher_->setFuture(fut);
+    }
+    /**
+     * @brief Asynchronous fetch of full OMDb details by IMDb ID.
+     * @param imdbId IMDb identifier
+     * @note Emits omdbGetFinished(movie)
+     */
+    Q_INVOKABLE void fetchOmdbByIdAsync(const QString& imdbId) {
+        if (imdbId.trimmed().isEmpty()) return;
+        if (getWatcher_) { getWatcher_->cancel(); getWatcher_->deleteLater(); getWatcher_ = nullptr; }
+        getWatcher_ = new QFutureWatcher<QVariantMap>(this);
+        auto fut = QtConcurrent::run([this, imdbId]() { return this->omdbGetByIdMap(imdbId); });
+        connect(getWatcher_, &QFutureWatcher<QVariantMap>::finished, this, [this, imdbId]() {
+            if (!getWatcher_) return;
+            if (!getWatcher_->isCanceled()) emit omdbGetFinished(getWatcher_->result());
+            getWatcher_->deleteLater(); getWatcher_ = nullptr;
+        });
+        getWatcher_->setFuture(fut);
+    }
+    /**
+     * @brief Asynchronous add via OMDb ID.
+     * @param imdbId IMDb identifier
+     * @note Emits addMovieFinished(imdbId, success)
+     */
+    Q_INVOKABLE void addMovieByImdbIdAsync(const QString& imdbId) {
+        if (imdbId.trimmed().isEmpty()) return;
+        if (addWatcher_) { addWatcher_->cancel(); addWatcher_->deleteLater(); addWatcher_ = nullptr; }
+        addWatcher_ = new QFutureWatcher<bool>(this);
+        auto fut = QtConcurrent::run([this, imdbId]() { return this->addMovieByImdbId(imdbId); });
+        connect(addWatcher_, &QFutureWatcher<bool>::finished, this, [this, imdbId]() {
+            if (!addWatcher_) return;
+            if (!addWatcher_->isCanceled()) emit addMovieFinished(imdbId, addWatcher_->result());
+            addWatcher_->deleteLater(); addWatcher_ = nullptr;
+        });
+        addWatcher_->setFuture(fut);
+    }
 };

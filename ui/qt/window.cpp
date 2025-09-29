@@ -192,6 +192,9 @@ void Top100QtWindow::buildLayout() {
     posterLabel_->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
     posterLabel_->setScaledContents(false);
     posterLabel_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    // Spinner overlay
+    posterSpinner_ = new SpinnerWidget(details);
+    posterSpinner_->hide();
     plotView_ = new QTextBrowser(details);
     plotView_->setReadOnly(true);
     plotView_->setOpenExternalLinks(true);
@@ -214,7 +217,9 @@ void Top100QtWindow::buildLayout() {
     auto *posterVBox = new QVBoxLayout(posterContainer_);
     posterVBox->setSpacing(kSpacingSmall);
     posterVBox->setContentsMargins(kGroupPadding, kGroupPadding, kGroupPadding, kGroupPadding);
+    // Stack poster and spinner by placing both and using alignment; spinner sits on top
     posterVBox->addWidget(posterLabel_, 1);
+    posterVBox->addWidget(posterSpinner_, 0, Qt::AlignCenter);
     posterContainer_->setLayout(posterVBox);
     detailsLayout->addWidget(detailsTopContainer, 2);
     detailsLayout->addWidget(posterContainer_, 6);

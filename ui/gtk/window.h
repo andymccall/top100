@@ -15,6 +15,9 @@
 
 namespace Gdk { class Pixbuf; }
 
+/**
+ * @brief GTK main window showing the Top100 list and details.
+ */
 class Top100GtkWindow : public Gtk::Window {
 public:
     Top100GtkWindow();
@@ -55,8 +58,10 @@ private:
     Gtk::Label genres_label_, genres_value_;
     Gtk::Label runtime_label_, runtime_value_;
     Gtk::Label imdb_label_;
-    Gtk::LinkButton imdb_link_;
+    // Use a Label with markup <a href=...> to avoid button padding misalignment
+    Gtk::Label imdb_link_;
     Gtk::Image poster_;
+        Gtk::Spinner poster_spinner_;
     Gtk::TextView plot_view_;
     Glib::RefPtr<Gdk::Pixbuf> poster_pixbuf_original_;
     std::string current_imdb_id_;

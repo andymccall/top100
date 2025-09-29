@@ -15,6 +15,9 @@
 #include <string>
 #include "Movie.h"
 
+// Forward declaration to avoid leaking sqlite3 header to dependents
+struct sqlite3;
+
 /** @defgroup core Core models and containers */
 
 /**
@@ -40,27 +43,53 @@ enum class SortOrder {
  */
 class Top100 {
 public:
+    /**
+     * @brief Open or create a Top100 database.
+     * @param filename Path to the SQLite database file
+     */
     Top100(const std::string& filename);
     ~Top100();
 
-    /** @brief Add a movie; replaces existing title+year duplicates. */
+    /** @brief Add a movie; replaces existing title+year duplicates.
+     *  @param movie Movie to add
+     */
     void addMovie(const Movie& movie);
-    /** @brief Remove by title (first match). No-op if not found. */
+    /** @brief Remove by title (first match). No-op if not found.
+     *  @param title Title to remove
+     */
     void removeMovie(const std::string& title);
-    /** @brief Remove by IMDb ID (preferred precise delete). */
+    /** @brief Remove by IMDb ID (preferred precise delete).
+     *  @param imdbID IMDb identifier
+     *  @return true if a record was removed
+     */
     bool removeByImdbId(const std::string& imdbID);
-    /** @brief Return a copy of movies in the requested sort order. */
+    /** @brief Return a copy of movies in the requested sort order.
+     *  @param order Sort order enum value
+     *  @return Vector of movies in requested order
+     */
     std::vector<Movie> getMovies(SortOrder order = SortOrder::DEFAULT) const;
 
     // Duplicate handling helpers
-    /** @return index or -1 if not found. */
+    /** @brief Find by IMDb ID.
+     *  @param imdbID IMDb identifier
+     *  @return index or -1 if not found. */
     int findIndexByImdbId(const std::string& imdbID) const;      // returns index or -1
-    /** @return index or -1 if not found. */
+    /** @brief Find by title+year.
+     *  @param title Movie title
+     *  @param year Release year
+     *  @return index or -1 if not found. */
     int findIndexByTitleYear(const std::string& title, int year) const; // returns index or -1
-    /** @brief Replace movie at index (bounds-checked internally). */
+    /** @brief Replace movie at index (bounds-checked internally).
+     *  @param index Position to replace
+     *  @param movie Replacement data
+     */
     void replaceMovie(size_t index, const Movie& movie);
     // Direct update access for ranking adjustments (bounds-checked)
-    /** @brief Update movie at index; returns false if index invalid. */
+    /** @brief Update movie at index.
+     *  @param index Target index
+     *  @param movie Replacement data
+     *  @return false if index invalid.
+     */
     bool updateMovie(size_t index, const Movie& movie);
 
     /**
@@ -69,6 +98,11 @@ public:
      * stored record identified by imdbID, while preserving userScore/userRank.
      * If the movie is not found, returns false. Saves to disk on success.
      */
+    /**
+     * @brief Merge by IMDb ID.
+     * @param omdbMovie OMDb-sourced movie
+     * @return true on success, false if not found
+     */
     bool mergeFromOmdbByImdbId(const Movie& omdbMovie);
 
     // Recompute 1-based userRank from userScore (descending). Unranked (-1) if list empty.
@@ -76,9 +110,12 @@ public:
     void recomputeRanks();
 
 private:
+    // Load all movies from the backing SQLite database (creating schema as needed)
     void load();
+    // Persist in‑memory vector to SQLite (full sync; inexpensive for <=100 rows)
     void save();
 
-    std::string filename;
-    std::vector<Movie> movies;
+    std::string filename;          // Path to SQLite database file (was JSON file)
+    std::vector<Movie> movies;     // In‑memory working set (authoritative ordering = insertion)
+    sqlite3* db = nullptr;         // Open database handle
 };

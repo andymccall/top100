@@ -127,6 +127,12 @@ private:
 };
 } // namespace
 
+/**
+ * @brief Qt Widgets application entry point.
+ * @param argc Argument count
+ * @param argv Argument vector
+ * @return Exit code
+ */
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 

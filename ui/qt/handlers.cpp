@@ -30,6 +30,7 @@ void Top100QtWindow::updateDetails() {
     QModelIndex idx = listView_->currentIndex();
     if (!idx.isValid()) {
         titleLabel_->clear(); posterLabel_->clear(); plotView_->clear();
+    if (posterSpinner_) posterSpinner_->stop();
         directorValue_->clear(); actorsValue_->clear(); genresValue_->clear(); runtimeValue_->clear(); imdbLink_->clear();
         return;
     }
@@ -73,8 +74,10 @@ void Top100QtWindow::updateDetails() {
     posterLabel_->setProperty("origPm", QVariant());
     const QString url = m.value("posterUrl").toString();
     if (!url.isEmpty() && url != "N/A") {
+    if (posterSpinner_) posterSpinner_->start();
         fetchPosterByUrl(url);
     } else if (!imdb.isEmpty()) {
+    if (posterSpinner_) posterSpinner_->start();
         fetchPosterViaOmdb(imdb);
     }
 }

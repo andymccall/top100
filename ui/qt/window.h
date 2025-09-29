@@ -14,6 +14,7 @@ class QListView;
 class QComboBox;
 class QLabel;
 class QTextBrowser;
+#include "spinner.h"
 class QNetworkAccessManager;
 class QToolBar;
 class QAction;
@@ -22,9 +23,16 @@ class QWidget;
 class Top100ListModel;
 class QObject;
 
+/**
+ * @brief Qt Widgets main window showing the Top100 list and details pane.
+ */
 class Top100QtWindow : public QMainWindow {
     Q_OBJECT
 public:
+    /**
+     * @brief Construct the main Qt Widgets window for Top100.
+     * @param parent Optional parent widget
+     */
     explicit Top100QtWindow(QWidget* parent = nullptr);
 
 private:
@@ -40,6 +48,7 @@ private:
     QLabel* runtimeValue_ = nullptr;
     QLabel* imdbLink_ = nullptr;
     QLabel* posterLabel_ = nullptr;
+    SpinnerWidget* posterSpinner_ = nullptr; // overlay spinner
     QWidget* detailsContainer_ = nullptr; // for width-based elide
     QWidget* posterContainer_ = nullptr;  // for poster scaling
     QTextBrowser* plotView_ = nullptr;
@@ -59,6 +68,7 @@ private:
     QNetworkAccessManager* nam_ = nullptr;
     QObject* posterResizer_ = nullptr;
     QObject* detailsResizer_ = nullptr;
+    // spinner controlled directly via posterSpinner_
 
     // Construction helpers
     void buildLayout();

@@ -5,7 +5,7 @@
 		{
 			"label": "CMake: configure",
 			"type": "shell",
-			"command": "cmake -S . -B build",
+			"command": "cmake -S . -B build/linux",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -14,7 +14,7 @@
 		{
 			"label": "CMake: build",
 			"type": "shell",
-			"command": "cmake --build build --config Debug --parallel",
+			"command": "cmake --build build/linux --config Debug --parallel",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -35,7 +35,7 @@
 			"type": "shell",
 			"command": "./top100_cli",
 			"options": {
-				"cwd": "${workspaceFolder}/build"
+				"cwd": "${workspaceFolder}/build/linux"
 			},
 			"dependsOn": [
 				"CMake: build"
@@ -47,7 +47,7 @@
 			"type": "shell",
 			"command": "ctest --output-on-failure",
 			"options": {
-				"cwd": "${workspaceFolder}/build"
+				"cwd": "${workspaceFolder}/build/linux"
 			},
 			"dependsOn": [
 				"CMake: build"
@@ -62,7 +62,7 @@
 				"-S",
 				".",
 				"-B",
-				"build"
+				"build/linux"
 			],
 			"problemMatcher": [
 				"$gcc"
@@ -77,7 +77,7 @@
 				"-S",
 				".",
 				"-B",
-				"build"
+				"build/linux"
 			],
 			"problemMatcher": [
 				"$gcc"
@@ -90,7 +90,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -106,7 +106,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -122,7 +122,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -138,7 +138,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -154,7 +154,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -170,7 +170,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -186,7 +186,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -202,7 +202,7 @@
 			"command": "cmake",
 			"args": [
 				"--build",
-				"build",
+				"build/linux",
 				"--config",
 				"Debug",
 				"--parallel"
@@ -218,7 +218,7 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"cmake --build build --config Debug --parallel && ctest --test-dir build --output-on-failure"
+				"cmake --build build/linux --config Debug --parallel && ctest --test-dir build/linux --output-on-failure"
 			],
 			"problemMatcher": [
 				"$gcc"
@@ -231,7 +231,7 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"cmake -S . -B build && cmake --build build --config Debug --parallel && ctest --test-dir build -N"
+				"cmake -S . -B build/linux && cmake --build build/linux --config Debug --parallel && ctest --test-dir build/linux -N"
 			],
 			"problemMatcher": [
 				"$gcc"
@@ -244,7 +244,7 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"cmake --build build --config Debug --parallel && ctest --test-dir build -N"
+				"cmake --build build/linux --config Debug --parallel && ctest --test-dir build/linux -N"
 			],
 			"problemMatcher": [
 				"$gcc"
@@ -257,7 +257,7 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"cmake --build build --config Debug --parallel && ctest --test-dir build -R movie_json_round_trip --output-on-failure"
+				"cmake --build build/linux --config Debug --parallel && ctest --test-dir build/linux -R movie_json_round_trip --output-on-failure"
 			],
 			"problemMatcher": [
 				"$gcc"
@@ -267,7 +267,7 @@
 		{
 			"label": "Configure and build with CMake",
 			"type": "shell",
-			"command": "cmake -S . -B build && cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake -S . -B build/linux && cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -276,7 +276,7 @@
 		{
 			"label": "Reconfigure and retest (CMake policy 3.30)",
 			"type": "shell",
-			"command": "cmake -S . -B build && cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake -S . -B build/linux && cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -285,7 +285,7 @@
 		{
 			"label": "Build with ranking feature and run tests",
 			"type": "shell",
-			"command": "cmake -S . -B build && cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake -S . -B build/linux && cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -294,7 +294,7 @@
 		{
 			"label": "Run tests after ranking changes",
 			"type": "shell",
-			"command": "cd build && ctest --output-on-failure",
+			"command": "cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -303,7 +303,7 @@
 		{
 			"label": "Rebuild after ranking loop change",
 			"type": "shell",
-			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -312,7 +312,7 @@
 		{
 			"label": "Build and Run All Tests (ctest)",
 			"type": "shell",
-			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -327,7 +327,7 @@
 		{
 			"label": "Build after config integration",
 			"type": "shell",
-			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -336,13 +336,13 @@
 		{
 			"label": "Rebuild after filesystem change",
 			"type": "shell",
-			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"group": "build"
 		},
 		{
 			"label": "Build and run all tests after menu tests",
 			"type": "shell",
-			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"command": "cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -432,7 +432,7 @@
 		{
 			"label": "Rebuild after Mastodon integration",
 			"type": "shell",
-			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"command": "cmake --build /home/andymccall/development/top100/build/linux -j && cd /home/andymccall/development/top100/build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -441,7 +441,7 @@
 		{
 			"label": "Rebuild after fixing Multipart",
 			"type": "shell",
-			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"command": "cmake --build /home/andymccall/development/top100/build/linux -j && cd /home/andymccall/development/top100/build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -459,7 +459,7 @@
 		{
 			"label": "Build and run tests (OMDb plot changes)",
 			"type": "shell",
-			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"command": "cmake --build /home/andymccall/development/top100/build/linux -j && cd /home/andymccall/development/top100/build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -468,7 +468,7 @@
 		{
 			"label": "Build and test after preferring full plot",
 			"type": "shell",
-			"command": "cmake --build /home/andymccall/development/top100/build -j && cd /home/andymccall/development/top100/build && ctest --output-on-failure",
+			"command": "cmake --build /home/andymccall/development/top100/build/linux -j && cd /home/andymccall/development/top100/build/linux && ctest --output-on-failure",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -498,7 +498,7 @@
 			"command": "bash",
 			"args": [
 				"-lc",
-				"rm -rf build && cmake -S . -B build -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON -DTOP100_ENABLE_TESTS=ON && cmake --build build --parallel && cd build && ctest --output-on-failure"
+				"rm -rf build/linux && cmake -S . -B build/linux -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON -DTOP100_ENABLE_TESTS=ON && cmake --build build/linux --parallel && cd build/linux && ctest --output-on-failure"
 			],
 			"options": {
 				"cwd": "${workspaceFolder}"
@@ -533,7 +533,7 @@
 		{
 			"label": "Build (cmake)",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -542,7 +542,7 @@
 		{
 			"label": "Configure (cmake)",
 			"type": "shell",
-			"command": "cmake -S . -B build -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON",
+			"command": "cmake -S . -B build/linux -DTOP100_UI_QT=ON -DTOP100_UI_KDE=ON",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -551,7 +551,7 @@
 		{
 			"label": "Build (cmake) 2",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -560,7 +560,7 @@
 		{
 			"label": "Build (cmake) 3",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -569,7 +569,7 @@
 		{
 			"label": "Rebuild after QML fix",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -578,7 +578,7 @@
 		{
 			"label": "Build (cmake) - after UI polish",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -587,7 +587,7 @@
 		{
 			"label": "Rebuild Qt fix",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -596,7 +596,7 @@
 		{
 			"label": "Rebuild after capture fix",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -605,7 +605,7 @@
 		{
 			"label": "Rebuild after cleanup",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -614,7 +614,7 @@
 		{
 			"label": "Full rebuild verify",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -623,7 +623,7 @@
 		{
 			"label": "Rebuild with Qt SSL diagnostics",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -632,7 +632,7 @@
 		{
 			"label": "Rebuild after poster QLabel tweaks",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -641,7 +641,7 @@
 		{
 			"label": "Rebuild with OMDb poster fallback",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -650,7 +650,246 @@
 		{
 			"label": "Rebuild with window sizing and poster label fix",
 			"type": "shell",
-			"command": "cmake --build build -j",
+			"command": "cmake --build build/linux -j",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Preset: Configure (linux)",
+			"type": "shell",
+			"command": "cmake --preset linux",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build"
+		},
+		{
+			"label": "Preset: Build (linux)",
+			"type": "shell",
+			"command": "cmake --build --preset linux",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build"
+		},
+		{
+			"label": "Preset: Configure (haiku)",
+			"type": "shell",
+			"command": "cmake --preset haiku",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build"
+		},
+		{
+			"label": "Preset: Build (haiku)",
+			"type": "shell",
+			"command": "cmake --build --preset haiku",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build"
+		},
+		{
+			"label": "Preset: Configure (android)",
+			"type": "shell",
+			"command": "cmake --preset android",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build"
+		},
+		{
+			"label": "Preset: Build (android)",
+			"type": "shell",
+			"command": "cmake --build --preset android",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build"
+		},
+		{
+			"label": "Configure linux into build/linux",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"-S",
+				".",
+				"-B",
+				"build/linux",
+				"-DTOP100_UI_QT=ON",
+				"-DTOP100_UI_KDE=ON",
+				"-DTOP100_UI_GTK=ON",
+				"-DTOP100_ENABLE_TESTS=ON"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build linux targets (kde, qt, gtk, cli)",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cmake --build build/linux --parallel --target top100_kde top100_qt top100_gtk top100_cli"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build linux targets (kde, qt, gtk, cli) - part 2",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"cmake --build build/linux --parallel --target top100_cli top100_kde top100_qt"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after KDE add dialog layout fix",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after KDE add dialog layout revert/tweak",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after adding spacer to Add dialog",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after increasing top spacing",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after custom header for Add dialog",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after search dialog rework (KDE)",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after spacing and style tweaks (KDE dialog)",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after shared pane color wiring (KDE)",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after QML property name fix (KDE)",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"build/linux",
+				"--parallel",
+				"--target",
+				"top100_kde"
+			],
 			"problemMatcher": [
 				"$gcc"
 			],

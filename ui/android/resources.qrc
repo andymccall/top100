@@ -1,0 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<RCC>
+  <qresource prefix="/android">
+    <file>qml/AndroidMain.qml</file>
+  </qresource>
+</RCC>

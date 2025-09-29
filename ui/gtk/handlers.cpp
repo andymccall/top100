@@ -95,12 +95,11 @@ void Top100GtkWindow::on_selection_changed() {
     // IMDb link
     if (!mv.imdbID.empty()) {
         std::string url = std::string("https://www.imdb.com/title/") + mv.imdbID + "/";
-        imdb_link_.set_uri(url);
-        imdb_link_.set_label("Open in IMDb");
+        std::string markup = std::string("<a href=\"") + url + "\">Open in IMDb</a>";
+        imdb_link_.set_markup(markup);
         imdb_link_.set_sensitive(true);
     } else {
-        imdb_link_.set_uri("");
-        imdb_link_.set_label("");
+        imdb_link_.set_markup("");
         imdb_link_.set_sensitive(false);
     }
     // Plot
@@ -115,10 +114,18 @@ void Top100GtkWindow::on_delete_current() {
     if (!iter) return;
     Glib::ustring imdb = (*iter)[columns_.imdb];
     AppConfig cfg = loadConfig();
-    Top100 list(cfg.dataFile);
-    if (list.removeByImdbId(imdb)) { show_status("Deleted."); }
-    reload_model();
-    update_status_movie_count();
+    {
+        Top100 list(cfg.dataFile);
+        if (list.removeByImdbId(imdb)) {
+            list.recomputeRanks();
+            show_status("Deleted.");
+        }
+        // list goes out of scope here; destructor saves before reload
+    }
+    Glib::signal_idle().connect_once([this]() {
+        reload_model();
+        update_status_movie_count();
+    });
 }
 
 void Top100GtkWindow::on_update_current() {
@@ -150,12 +157,17 @@ void Top100GtkWindow::on_add_movie() {
             if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) { show_status("OMDb not configured"); return; }
             auto maybe = omdbGetById(cfg.omdbApiKey, imdb);
             if (!maybe) { show_status("OMDb fetch failed"); return; }
-            Top100 list(cfg.dataFile);
-            list.addMovie(*maybe);
-            list.recomputeRanks();
+            // Limit scope so destructor flushes to DB before reload_model()
+            {
+                Top100 list(cfg.dataFile);
+                list.addMovie(*maybe);
+                list.recomputeRanks();
+            }
             show_status("Added movie");
-            reload_model(imdb);
-            update_status_movie_count();
+            Glib::signal_idle().connect_once([this, imdb]() {
+                reload_model(imdb);
+                update_status_movie_count();
+            });
         } catch (...) { show_status("Error adding movie"); }
     } else if (resp == Gtk::RESPONSE_REJECT) {
         // Enter manually flow: prompt for IMDb ID and add directly
@@ -177,12 +189,17 @@ void Top100GtkWindow::on_add_movie() {
                 if (!cfg.omdbEnabled || cfg.omdbApiKey.empty()) { show_status("OMDb not configured"); return; }
                 auto maybe = omdbGetById(cfg.omdbApiKey, imdb);
                 if (!maybe) { show_status("OMDb fetch failed"); return; }
-                Top100 list(cfg.dataFile);
-                list.addMovie(*maybe);
-                list.recomputeRanks();
+                // Limit scope so destructor flushes to DB before reload_model()
+                {
+                    Top100 list(cfg.dataFile);
+                    list.addMovie(*maybe);
+                    list.recomputeRanks();
+                }
                 show_status("Added movie");
-                reload_model(imdb);
-                update_status_movie_count();
+                Glib::signal_idle().connect_once([this, imdb]() {
+                    reload_model(imdb);
+                    update_status_movie_count();
+                });
             } catch (...) { show_status("Error adding movie"); }
         }
     }

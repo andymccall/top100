@@ -74,7 +74,7 @@ int main()
                 std::cout << "OMDb disabled.\n";
             } else {
                 // Set data file path
-                std::cout << "Enter path for data file (top100.json): ";
+                std::cout << "Enter path for data file (top100.db): ";
                 std::string path;
                 std::cin >> path;
                 if (setDataFile(cfg, path)) {

@@ -97,14 +97,25 @@ Top100GtkWindow::Top100GtkWindow()
     add_form_row(r++, genres_label_, genres_value_);
     add_form_row(r++, runtime_label_, runtime_value_);
     imdb_label_.set_xalign(0.0f);
+    // Match label width used in add_form_row for consistent column positions
+    imdb_label_.set_width_chars(kLabelMinWidth / 7);
+    // Configure as markup label with link to avoid button padding
+    imdb_link_.set_use_markup(true);
+    imdb_link_.set_xalign(0.0f);
     imdb_link_.set_halign(Gtk::ALIGN_START);
+    imdb_link_.set_selectable(false);
     details_grid_.attach(imdb_label_, 0, r, 1, 1);
     details_grid_.attach(imdb_link_, 1, r, 1, 1);
     right_box_.pack_start(details_grid_, Gtk::PACK_SHRINK);
 
     poster_.set_hexpand(true);
     poster_.set_vexpand(true);
+    // Poster image with spinner overlay packed after it
     right_box_.pack_start(poster_, Gtk::PACK_EXPAND_WIDGET);
+    poster_spinner_.set_halign(Gtk::ALIGN_CENTER);
+    poster_spinner_.set_valign(Gtk::ALIGN_CENTER);
+    poster_spinner_.set_no_show_all(true);
+    right_box_.pack_start(poster_spinner_, Gtk::PACK_SHRINK);
 
     auto plot_hdr = Gtk::manage(new Gtk::Label);
     plot_hdr->set_markup(std::string("<b>") + kGroupPlot + "</b>");

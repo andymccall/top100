@@ -23,7 +23,7 @@
  * - Otherwise, default path is ~/.top100_config.json.
  *
  * Field defaults (on first run):
- * - dataFile: "$HOME/top100/top100.json" (directories created automatically)
+ * - dataFile: "$HOME/top100/top100.db" (directories created automatically, SQLite database)
  * - omdbEnabled: false; omdbApiKey: ""
  * - blueSkyEnabled: false; blueSkyService: "https://bsky.social"
  * - mastodonEnabled: false; mastodonInstance: "https://mastodon.social"
@@ -37,7 +37,7 @@
  * @ingroup config
  */
 struct AppConfig {
-    std::string dataFile;                 ///< Absolute path to your movie data JSON
+    std::string dataFile;                 ///< Absolute path to your movie database (SQLite .db)
     bool        omdbEnabled = false;      ///< Whether OMDb features are enabled in the UI
     std::string omdbApiKey;               ///< OMDb API key (empty if not configured)
 
@@ -69,8 +69,8 @@ struct AppConfig {
 std::string getConfigPath();
 
 /**
- * @brief Compute the default data file path for movies JSON.
- * @return Absolute path "$HOME/top100/top100.json".
+ * @brief Compute the default data file path for the movie SQLite database.
+ * @return Absolute path "$HOME/top100/top100.db".
  * @ingroup config
  */
 std::string getDefaultDataPath();

@@ -27,6 +27,9 @@ Kirigami.ApplicationWindow {
     visible: true
     // Movie count propagated from the ListView so footer can access it
     property int movieCount: 0
+    // Shared pane styling so all panes stay in lockstep
+    property color uiPaneBgColor: Kirigami.Theme.backgroundColor
+    property color uiPaneBorderColor: Kirigami.Theme.disabledTextColor
 
     // Header toolbar with primary actions
     header: ToolBar {
@@ -298,13 +301,22 @@ Kirigami.ApplicationWindow {
                         // Poster area ~60%
                         Layout.fillWidth: true
                         Layout.preferredHeight: parent.height * 0.60
+                        // Poster image
                         Image {
+                            id: mainPoster
                             anchors.centerIn: parent
                             width: parent.width * Ui_PosterMaxWidthRatio
                             height: parent.height * Ui_PosterMaxHeightRatio
                             fillMode: Image.PreserveAspectFit
+                            asynchronous: true
                             source: (page.hasSelection && page.currentMovie.posterUrl) ? page.currentMovie.posterUrl : ""
                             visible: source !== "" && status === Image.Ready
+                        }
+                        // Spinner while loading
+                        BusyIndicator {
+                            anchors.centerIn: parent
+                            running: mainPoster.source !== "" && mainPoster.status !== Image.Ready
+                            visible: running
                         }
                     }
                     ColumnLayout {
@@ -373,7 +385,6 @@ Kirigami.ApplicationWindow {
     // Fixed size and not resizable
     width: Kirigami.Units.gridUnit * 70
     height: Kirigami.Units.gridUnit * 45
-    resizeToItem: false
         standardButtons: Dialog.NoButton
         // Center the dialog on the main window
         anchors.centerIn: parent
@@ -499,6 +510,7 @@ Kirigami.ApplicationWindow {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 Image {
+                                    id: leftRankPoster
                                     anchors.centerIn: parent
                                     width: parent.width * Ui_PosterMaxWidthRatio
                                     height: parent.height * Ui_PosterMaxHeightRatio
@@ -506,6 +518,11 @@ Kirigami.ApplicationWindow {
                                     asynchronous: true
                                     source: (rankDialog.leftMovie().posterUrl || "")
                                     visible: source !== "" && status === Image.Ready
+                                }
+                                BusyIndicator {
+                                    anchors.centerIn: parent
+                                    running: leftRankPoster.source !== "" && leftRankPoster.status !== Image.Ready
+                                    visible: running
                                 }
                             }
                         }
@@ -547,6 +564,7 @@ Kirigami.ApplicationWindow {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 Image {
+                                    id: rightRankPoster
                                     anchors.centerIn: parent
                                     width: parent.width * Ui_PosterMaxWidthRatio
                                     height: parent.height * Ui_PosterMaxHeightRatio
@@ -554,6 +572,11 @@ Kirigami.ApplicationWindow {
                                     asynchronous: true
                                     source: (rankDialog.rightMovie().posterUrl || "")
                                     visible: source !== "" && status === Image.Ready
+                                }
+                                BusyIndicator {
+                                    anchors.centerIn: parent
+                                    running: rightRankPoster.source !== "" && rightRankPoster.status !== Image.Ready
+                                    visible: running
                                 }
                             }
                         }
@@ -664,24 +687,48 @@ Kirigami.ApplicationWindow {
     Dialog {
         id: addDialog
         modal: true
-        title: qsTr("Add Movie (OMDb)")
+        // No built-in header; we render heading inside content for reliable spacing
+        title: ""
+        header: null
         width: window.width * 0.5
         height: window.height * 0.6
         x: (window.width - width) / 2
         y: (window.height - height) / 2
         standardButtons: Dialog.NoButton
         property var selected: null
-        onVisibleChanged: if (visible) { x = (window.width - width)/2; y = (window.height - height)/2 }
-        contentItem: ColumnLayout {
-            spacing: Kirigami.Units.smallSpacing
+        // Whether a search is currently running (UI disables inputs)
+        property bool searching: false
+    onVisibleChanged: if (visible) { x = (window.width - width)/2; y = (window.height - height)/2; infoMessage = "" }
+        contentItem: Item {
+            anchors.fill: parent
+            anchors.margins: Kirigami.Units.largeSpacing
+            ColumnLayout {
+                id: addColumn
+                anchors.fill: parent
+                spacing: Kirigami.Units.smallSpacing
+                // Top spacer (reduced)
+                Item { Layout.fillWidth: true; Layout.preferredHeight: Kirigami.Units.largeSpacing * 1 }
+                // Heading inside content to avoid overlap with search row
+                Kirigami.Heading {
+                    level: 2
+                    text: qsTr("Add a movie from OMDb")
+                    font.bold: true
+                    font.weight: Font.Bold
+                    Layout.fillWidth: true
+                }
+                // Spacer below heading (reduced)
+                Item { Layout.fillWidth: true; Layout.preferredHeight: Kirigami.Units.largeSpacing * 1 }
             // Search row
             RowLayout {
+                Layout.fillWidth: true
+                    Layout.topMargin: 0
                 spacing: Kirigami.Units.smallSpacing
-                Label { text: qsTr("Search for movie"); Layout.alignment: Qt.AlignVCenter }
+                    Label { text: qsTr("Search for a movie"); Layout.alignment: Qt.AlignVCenter }
                 TextField {
                     id: queryField
                     Layout.fillWidth: true
                     placeholderText: qsTr("title keyword")
+                    enabled: !addDialog.searching
                     onAccepted: searchBtn.clicked()
                 }
                 Button {
@@ -689,118 +736,170 @@ Kirigami.ApplicationWindow {
                     text: qsTr("Search")
                     highlighted: true
                     focus: true
+                    enabled: !addDialog.searching
                     onClicked: {
                         var q = queryField.text
                         if (!q || q.trim().length === 0) return
-                        var results = top100Model.searchOmdb(q)
-                        if (!results || results.length === 0) { window.showPassiveNotification(qsTr("No results.")); return }
-                        selectionModel.results = results
-                        resultsList.currentIndex = 0
+                        addDialog.searching = true
+                            window.showPassiveNotification(qsTr("Searching"))
+                        Qt.callLater(function() {
+                            var results = top100Model.searchOmdb(q)
+                            addDialog.searching = false
+                                resultsList.currentIndex = -1
+                                addDialog.selected = null
+                                selectionModel.results = results || []
+                        })
                     }
                 }
             }
-
-            // Content split: results list on left, preview on right
-            SplitView {
+                // Content split: results (left) and details (right)
+                SplitView {
                 id: addSplit
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 orientation: Qt.Horizontal
-                // Results
-                ListView {
-                    id: resultsList
-                    SplitView.preferredWidth: parent.width * 0.4
-                    model: selectionModel.results
-                    delegate: ItemDelegate {
-                        width: parent.width
-                        text: (modelData.title + " (" + modelData.year + ") [" + modelData.imdbID + "]")
-                        onClicked: resultsList.currentIndex = index
+                    // Left: Results pane
+                    Frame {
+                        SplitView.preferredWidth: parent.width * 0.4
+                        Layout.fillHeight: true
+                        padding: 0
+                        Rectangle {
+                            anchors.fill: parent
+                            color: window.uiPaneBgColor
+                            radius: 3
+                            border.color: window.uiPaneBorderColor
+                            border.width: 1
+                        }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: Kirigami.Units.smallSpacing
+                            spacing: Kirigami.Units.smallSpacing
+                            Kirigami.Heading { level: 4; text: qsTr("Results"); font.bold: true; font.weight: Font.Bold }
+                            ListView {
+                                id: resultsList
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                boundsBehavior: Flickable.StopAtBounds
+                                model: selectionModel.results
+                                Keys.onReturnPressed: if (addBtn.enabled) addBtn.clicked()
+                                delegate: ItemDelegate {
+                                    width: parent.width
+                                    text: (modelData.title + " (" + modelData.year + ")")
+                                    onClicked: resultsList.currentIndex = index
+                                }
+                                onCurrentIndexChanged: {
+                                    if (currentIndex >= 0 && model && model.length > currentIndex) {
+                                        var imdb = model[currentIndex].imdbID
+                                        addDialog.selected = top100Model.omdbGetByIdMap(imdb)
+                                    } else {
+                                        addDialog.selected = null
+                                    }
+                                }
+                            }
+                        }
                     }
-                    onCurrentIndexChanged: {
-                        if (currentIndex >= 0 && model && model.length > currentIndex) {
-                            var imdb = model[currentIndex].imdbID
-                            addDialog.selected = top100Model.omdbGetByIdMap(imdb)
-                        } else {
-                            addDialog.selected = null
+                    // Right: Details pane
+                    Frame {
+                        SplitView.preferredWidth: parent.width * 0.6
+                        Layout.fillHeight: true
+                        padding: 0
+                        Rectangle {
+                            anchors.fill: parent
+                            color: window.uiPaneBgColor
+                            radius: 3
+                            border.color: window.uiPaneBorderColor
+                            border.width: 1
+                        }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: Kirigami.Units.smallSpacing
+                            spacing: Kirigami.Units.smallSpacing
+                            // Movie title
+                            Kirigami.Heading {
+                                level: 3
+                                font.bold: true
+                                font.weight: Font.Bold
+                                text: addDialog.selected ? ((addDialog.selected.title || "") + (addDialog.selected.year ? (" (" + addDialog.selected.year + ")") : "")) : ""
+                            }
+                            // Poster area
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 280
+                                clip: true
+                                Image {
+                                    id: addPoster
+                                    anchors.centerIn: parent
+                                    width: parent.width
+                                    height: parent.height
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    source: (addDialog.selected && addDialog.selected.posterUrl) ? addDialog.selected.posterUrl : ""
+                                    visible: source !== "" && status === Image.Ready
+                                }
+                                BusyIndicator {
+                                    anchors.centerIn: parent
+                                    running: addPoster.source !== "" && addPoster.status !== Image.Ready
+                                    visible: running
+                                }
+                            }
+                            // Plot box
+                            Kirigami.Heading { level: 4; text: qsTr("Plot"); font.bold: true; font.weight: Font.Bold }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 3
+                                color: "white"
+                                border.color: Kirigami.Theme.disabledTextColor
+                                border.width: 1
+                                Layout.margins: Kirigami.Units.smallSpacing
+                                Flickable {
+                                    anchors.fill: parent
+                                    anchors.margins: Kirigami.Units.smallSpacing
+                                    clip: true
+                                    contentWidth: width
+                                    contentHeight: plotSelText.implicitHeight
+                                    ScrollBar.vertical: ScrollBar {}
+                                    Text {
+                                        id: plotSelText
+                                        width: parent.width
+                                        wrapMode: Text.WordWrap
+                                        text: addDialog.selected ? ((addDialog.selected.plotShort && addDialog.selected.plotShort.length > 0) ? addDialog.selected.plotShort : (addDialog.selected.plotFull || "")) : ""
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                // Preview panel
-                Flickable {
-                    SplitView.preferredWidth: parent.width * 0.6
-                    contentWidth: width
-                    contentHeight: previewCol.implicitHeight
-                    clip: true
-                    ColumnLayout {
-                        id: previewCol
-                        width: parent.width
-                        spacing: Kirigami.Units.smallSpacing
-                        Kirigami.Heading {
-                            level: 3
-                            text: addDialog.selected ? ((addDialog.selected.title || "") + (addDialog.selected.year ? (" (" + addDialog.selected.year + ")") : "")) : ""
-                            visible: !!addDialog.selected
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 220
-                            Image {
-                                anchors.centerIn: parent
-                                width: parent.width * Ui_PosterMaxWidthRatio
-                                height: parent.height * Ui_PosterMaxHeightRatio
-                                fillMode: Image.PreserveAspectFit
-                                source: (addDialog.selected && addDialog.selected.posterUrl) ? addDialog.selected.posterUrl : ""
-                                visible: source !== "" && status === Image.Ready
-                            }
-                        }
-                        Text {
-                            width: parent.width
-                            wrapMode: Text.WordWrap
-                            text: addDialog.selected ? ((addDialog.selected.plotShort && addDialog.selected.plotShort.length > 0) ? addDialog.selected.plotShort : (addDialog.selected.plotFull || "")) : ""
-                            visible: !!addDialog.selected
+
+            // Buttons row
+            RowLayout {
+                spacing: Kirigami.Units.smallSpacing
+                // Cancel on the left
+                Button { text: qsTr("Cancel"); onClicked: addDialog.close() }
+                // Spacer pushes the next buttons to the right
+                Item { Layout.fillWidth: true }
+                // Manual add (kept disabled for now)
+                Button {
+                    text: qsTr("Add manually")
+                    enabled: false
+                }
+                Button {
+                    id: addBtn
+                    text: qsTr("Add")
+                    enabled: resultsList.currentIndex >= 0
+                    onClicked: {
+                        if (resultsList.currentIndex < 0) return
+                        var imdbSel = selectionModel.results[resultsList.currentIndex].imdbID
+                        if (top100Model.addMovieByImdbId(imdbSel)) {
+                            window.showPassiveNotification(qsTr("Movie added."))
+                            addDialog.close()
+                        } else {
+                            window.showPassiveNotification(qsTr("Add failed."))
                         }
                     }
                 }
             }
-
-            // Buttons row
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: Kirigami.Units.smallSpacing
-                Button {
-                    text: qsTr("Enter manually")
-                    onClicked: {
-                        var dialog = Qt.createQmlObject('
-                            import QtQuick 2.15; import QtQuick.Controls 2.15; import org.kde.kirigami 2.20 as Kirigami; Dialog { id: d; modal: true; title: "Add Movie by IMDb ID"; standardButtons: Dialog.Ok | Dialog.Cancel; property string imdb: ""; contentItem: Column { spacing: 8; Label { text: "Enter IMDb ID (e.g., tt0133093):" } TextField { id: tf; placeholderText: "tt........"; onAccepted: d.accept(); onTextChanged: d.imdb = text } } }
-                        ', window, "ManualAddDialog")
-                        dialog.accepted.connect(function() {
-                            if (dialog.imdb && dialog.imdb.length > 0) {
-                                if (top100Model.addMovieByImdbId(dialog.imdb)) {
-                                    window.showPassiveNotification(qsTr("Movie added."))
-                                } else {
-                                    window.showPassiveNotification(qsTr("Add failed."))
-                                }
-                            }
-                        })
-                        dialog.open()
-                        addDialog.close()
-                    }
-                }
-                Button { text: qsTr("Cancel"); onClicked: addDialog.close() }
-                Button {
-                    text: qsTr("Add")
-                    enabled: addDialog.selected && addDialog.selected.title && addDialog.selected.year
-                    onClicked: {
-                        if (resultsList.currentIndex >= 0) {
-                            var imdbSel = selectionModel.results[resultsList.currentIndex].imdbID
-                            if (top100Model.addMovieByImdbId(imdbSel)) {
-                                window.showPassiveNotification(qsTr("Movie added."))
-                                addDialog.close()
-                            } else {
-                                window.showPassiveNotification(qsTr("Add failed."))
-                            }
-                        }
-                    }
-                }
             }
         }
     }

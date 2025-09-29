@@ -28,6 +28,8 @@
 #include <QPixmap>
 #include <QShowEvent>
 #include <QResizeEvent>
+#include <QtConcurrent>
+#include <QFutureWatcher>
 
 #include "../common/constants.h"
 #include "../common/Top100ListModel.h"
@@ -51,6 +53,36 @@ Top100QtAddDialog::Top100QtAddDialog(QWidget* parent, Top100ListModel* model)
     searchBtn_->setDefault(true);
     connect(searchBtn_, &QPushButton::clicked, this, [this]() { doSearch(); });
     connect(queryEdit_, &QLineEdit::returnPressed, this, [this]() { doSearch(); });
+    // Connect async model signals
+    if (model_) {
+        connect(model_, &Top100ListModel::omdbSearchFinished, this, [this](const QVariantList& res){
+            resultsModel_->clear();
+            for (const auto& v : res) {
+                QVariantMap m = v.toMap();
+                QString title = m.value("title").toString();
+                int year = m.value("year").toInt();
+                QString imdb = m.value("imdbID").toString();
+                auto *it = new QStandardItem(QString("%1 (%2)").arg(title).arg(year));
+                it->setData(imdb, Qt::UserRole + 1);
+                it->setEditable(false);
+                resultsModel_->appendRow(it);
+            }
+            if (resultsModel_->rowCount() > 0) resultsView_->setCurrentIndex(resultsModel_->index(0,0));
+            searchBtn_->setEnabled(true);
+            queryEdit_->setEnabled(true);
+        });
+        connect(model_, &Top100ListModel::omdbGetFinished, this, [this](const QVariantMap& m){
+            QString t = m.value("title").toString();
+            int y = m.value("year").toInt();
+            titleLbl_->setText(y > 0 ? QString("%1 (%2)").arg(t).arg(y) : t);
+            plotView_->setPlainText(!m.value("plotShort").toString().isEmpty() ? m.value("plotShort").toString() : m.value("plotFull").toString());
+            QString poster = m.value("posterUrl").toString();
+            loadPoster(poster);
+        });
+        connect(model_, &Top100ListModel::addMovieFinished, this, [this](const QString& imdb, bool ok){
+            if (ok) accept(); else addBtn_->setEnabled(true);
+        });
+    }
     searchLayout->addWidget(lbl);
     searchLayout->addWidget(queryEdit_, 1);
     searchLayout->addWidget(searchBtn_);
@@ -76,10 +108,13 @@ Top100QtAddDialog::Top100QtAddDialog(QWidget* parent, Top100ListModel* model)
     posterLbl_ = new QLabel(preview);
     posterLbl_->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
     posterLbl_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    posterSpinner_ = new SpinnerWidget(preview);
+    posterSpinner_->hide();
     plotView_ = new QTextBrowser(preview);
     plotView_->setReadOnly(true);
     pv->addWidget(titleLbl_);
     pv->addWidget(posterLbl_, 4);
+    pv->addWidget(posterSpinner_, 0, Qt::AlignCenter);
     pv->addWidget(plotView_, 3);
 
     split->addWidget(resultsView_);
@@ -121,20 +156,8 @@ void Top100QtAddDialog::doSearch() {
     selectedImdb_.clear();
     const QString q = queryEdit_->text().trimmed();
     if (q.isEmpty() || !model_) return;
-    QVariantList res = model_->searchOmdb(q);
-    for (const auto& v : res) {
-        QVariantMap m = v.toMap();
-        QString title = m.value("title").toString();
-        int year = m.value("year").toInt();
-        QString imdb = m.value("imdbID").toString();
-        auto *it = new QStandardItem(QString("%1 (%2) [%3]").arg(title).arg(year).arg(imdb));
-        it->setData(imdb, Qt::UserRole + 1);
-        it->setEditable(false);
-        resultsModel_->appendRow(it);
-    }
-    if (resultsModel_->rowCount() > 0) {
-        resultsView_->setCurrentIndex(resultsModel_->index(0,0));
-    }
+    searchBtn_->setEnabled(false); queryEdit_->setEnabled(false);
+    model_->searchOmdbAsync(q);
 }
 
 void Top100QtAddDialog::onResultSelectionChanged() {
@@ -143,30 +166,26 @@ void Top100QtAddDialog::onResultSelectionChanged() {
     QString imdb = resultsModel_->itemFromIndex(idx)->data(Qt::UserRole + 1).toString();
     selectedImdb_ = imdb;
     addBtn_->setEnabled(true);
-    QVariantMap m = model_->omdbGetByIdMap(imdb);
-    QString t = m.value("title").toString();
-    int y = m.value("year").toInt();
-    titleLbl_->setText(y > 0 ? QString("%1 (%2)").arg(t).arg(y) : t);
-    plotView_->setPlainText(!m.value("plotShort").toString().isEmpty() ? m.value("plotShort").toString() : m.value("plotFull").toString());
-    QString poster = m.value("posterUrl").toString();
-    loadPoster(poster);
+    model_->fetchOmdbByIdAsync(imdb);
 }
 
 void Top100QtAddDialog::loadPoster(const QString& url) {
     origPoster_ = QPixmap();
     posterLbl_->clear();
+    if (posterSpinner_) posterSpinner_->start();
     if (url.isEmpty() || url == "N/A") return;
     QNetworkRequest request{QUrl{url}};
     QNetworkReply* reply = nam_->get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
-        if (reply->error() != QNetworkReply::NoError) return;
+    if (reply->error() != QNetworkReply::NoError) { if (posterSpinner_) posterSpinner_->stop(); return; }
         QByteArray data = reply->readAll();
         QPixmap pm; pm.loadFromData(data);
         if (!pm.isNull()) {
             origPoster_ = pm;
             rescalePoster();
         }
+        if (posterSpinner_) posterSpinner_->stop();
     });
 }
 

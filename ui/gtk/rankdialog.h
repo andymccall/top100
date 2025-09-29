@@ -8,8 +8,13 @@
 #include <gtkmm.h>
 //#include <gdkmm/cursor.h>
 
+/**
+ * @brief GTK dialog for pairwise ranking using simple Elo-like updates.
+ */
 class Top100GtkRankDialog : public Gtk::Dialog {
 public:
+    /** @brief Pairwise ranking dialog (Elo-style).
+     *  @param parent Parent window */
     Top100GtkRankDialog(Gtk::Window& parent);
 private:
     // Containers to size posters consistently

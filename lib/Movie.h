@@ -25,27 +25,44 @@
  * @ingroup core
  */
 struct Movie {
+    /** Movie title */
     std::string title;
+    /** Release year */
     int year;
+    /** Director name(s) */
     std::string director;
     // Additional metadata (optional)
-    std::string plotShort;              // OMDb short plot
-    std::string plotFull;               // OMDb full plot
-    std::vector<std::string> actors;     // up to first 10 from OMDb
-    std::vector<std::string> genres;     // parsed from comma-separated "Genre"
-    int runtimeMinutes = 0;              // parsed from "Runtime" (e.g., "148 min")
-    std::vector<std::string> countries;  // parsed from comma-separated "Country"
-    std::string posterUrl;               // from "Poster"
+    /** OMDb short plot */
+    std::string plotShort;
+    /** OMDb full plot */
+    std::string plotFull;
+    /** Up to first 10 actor names from OMDb */
+    std::vector<std::string> actors;
+    /** Parsed from comma-separated OMDb "Genre" */
+    std::vector<std::string> genres;
+    /** Parsed from OMDb "Runtime" (e.g., 148 for "148 min") */
+    int runtimeMinutes = 0;
+    /** Parsed from comma-separated OMDb "Country" */
+    std::vector<std::string> countries;
+    /** Poster URL from OMDb "Poster" */
+    std::string posterUrl;
     // Ratings (optional)
-    double imdbRating = 0.0;             // 0.0-10.0 from OMDb "imdbRating"
-    int metascore = 0;                   // 0-100 from OMDb "Metascore"
-    int rottenTomatoes = 0;              // 0-100 from OMDb Ratings[Source=="Rotten Tomatoes"]
+    /** IMDb rating 0.0-10.0 from OMDb "imdbRating" */
+    double imdbRating = 0.0;
+    /** Metascore 0-100 from OMDb "Metascore" */
+    int metascore = 0;
+    /** Rotten Tomatoes 0-100 from OMDb Ratings[Source=="Rotten Tomatoes"] */
+    int rottenTomatoes = 0;
     // Provenance and IDs
-    std::string source;                  // "manual" or "omdb" (optional; default empty)
-    std::string imdbID;                  // from OMDb; empty for manual entries
+    /** Source tag: "manual" or "omdb" (optional; default empty) */
+    std::string source;
+    /** IMDb identifier (e.g., tt0133093); empty for manual entries */
+    std::string imdbID;
     // User ranking fields
-    double userScore = 1500.0;           // Elo-like score for pairwise ranking
-    int userRank = -1;                   // 1-based rank; -1 means unranked
+    /** Elo-like score for pairwise ranking */
+    double userScore = 1500.0;
+    /** 1-based rank; -1 means unranked */
+    int userRank = -1;
 };
 
 /**
