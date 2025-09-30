@@ -86,9 +86,42 @@ target_include_directories(top100_cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cli ${
 target_link_libraries(top100_cli PRIVATE top100 top100_config top100_config_utils cpr::cpr nlohmann_json::nlohmann_json top100_services)
 
 # Services (BlueSky + Mastodon) in a reusable library for UIs
-add_library(top100_services STATIC lib/bluesky.cpp lib/mastodon.cpp lib/posting.cpp lib/omdb.cpp)
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(CAIRO QUIET cairo)
+  if(CAIRO_FOUND)
+    # Create an imported target alias to link easily
+    add_library(PkgConfig::CAIRO INTERFACE IMPORTED)
+    set_target_properties(PkgConfig::CAIRO PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${CAIRO_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${CAIRO_LIBRARIES}")
+  endif()
+endif()
+
+# Optional JPEG (for poster decoding beyond PNG)
+find_package(JPEG QUIET)
+
+set(TOP100_IMAGE_EXPORT_SRC lib/image_export_stub.cpp)
+if(CAIRO_FOUND)
+  message(STATUS "Cairo found: enabling PNG export feature")
+  set(TOP100_IMAGE_EXPORT_SRC lib/image_export.cpp)
+endif()
+
+add_library(top100_services STATIC lib/bluesky.cpp lib/mastodon.cpp lib/posting.cpp lib/omdb.cpp ${TOP100_IMAGE_EXPORT_SRC})
 target_include_directories(top100_services PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_link_libraries(top100_services PUBLIC cpr::cpr nlohmann_json::nlohmann_json)
+if(CAIRO_FOUND)
+  target_link_libraries(top100_services PUBLIC PkgConfig::CAIRO)
+  target_compile_definitions(top100_services PUBLIC TOP100_HAVE_CAIRO=1)
+else()
+  target_compile_definitions(top100_services PUBLIC TOP100_HAVE_CAIRO=0)
+endif()
+if(JPEG_FOUND)
+  target_link_libraries(top100_services PUBLIC JPEG::JPEG)
+  target_compile_definitions(top100_services PUBLIC TOP100_HAVE_JPEG=1)
+else()
+  target_compile_definitions(top100_services PUBLIC TOP100_HAVE_JPEG=0)
+endif()
 
 if(TOP100_ENABLE_TESTS)
   # Prefer Boost CMake package (CONFIG); fall back to FindBoost module if not available

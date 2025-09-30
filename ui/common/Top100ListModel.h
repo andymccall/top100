@@ -39,6 +39,7 @@
 #include "../../lib/config.h"
 #include "../../lib/posting.h"
 #include "../../lib/omdb.h"
+#include "../../lib/image_export.h"
 
 /**
  * @brief Shared Qt list model exposing Top100 movies to Qt Widgets and KDE UIs.
@@ -330,6 +331,27 @@ public:
             // ignore
         }
         return m;
+    }
+
+    /**
+     * @brief Export current view to a PNG at the given path.
+     * @param outPath Output file path (UTF-8)
+     * @param heading Heading text
+     * @return true on success
+     */
+    Q_INVOKABLE bool exportImage(const QString& outPath, const QString& heading = QStringLiteral("My Top 100 Movies")) const {
+        std::vector<Movie> v;
+        v.reserve(static_cast<size_t>(rowCount()));
+        for (int i = 0; i < rowCount() && i < 100; ++i) {
+            QVariantMap m = get(i);
+            Movie mv;
+            mv.title = m.value("title").toString().toStdString();
+            mv.year = m.value("year").toInt();
+            mv.posterUrl = m.value("posterUrl").toString().toStdString();
+            mv.imdbID = m.value("imdbID").toString().toStdString();
+            v.push_back(std::move(mv));
+        }
+        return exportTop100Image(v, outPath.toStdString(), heading.toStdString());
     }
     /**
      * @brief Update an existing movie from OMDb using its IMDb ID.

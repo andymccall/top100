@@ -15,9 +15,11 @@
 //-------------------------------------------------------------------------------
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls 2.15 as Controls
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 import org.kde.kirigami 2.20 as Kirigami
+import Qt.labs.platform 1.1
 
 Kirigami.ApplicationWindow {
     id: window
@@ -43,6 +45,10 @@ Kirigami.ApplicationWindow {
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
+                enabled: window.movieCount < 100
+                ToolTip.visible: !enabled && hovered
+                ToolTip.delay: 300
+                ToolTip.text: qsTr("List full, remove a movie first")
                 onClicked: addDialog.open()
             }
             ToolButton {
@@ -62,25 +68,42 @@ Kirigami.ApplicationWindow {
                 onClicked: top100Model.reload()
             }
             ToolButton {
+                icon.name: "document-export"
+                text: qsTr("Export Image")
+                display: AbstractButton.TextUnderIcon
+                icon.width: Kirigami.Units.iconSizes.medium
+                icon.height: Kirigami.Units.iconSizes.medium
+                onClicked: {
+                    if (top100Model.count() === 0) {
+                        window.showPassiveNotification(qsTr("No movies to export."));
+                        return;
+                    }
+                    var picsDir = StandardPaths.writableLocation(StandardPaths.PicturesLocation);
+                    var homeDir = StandardPaths.writableLocation(StandardPaths.HomeLocation);
+                    exportSaveDialog.pathText = (picsDir && picsDir.length > 0) ? (picsDir + "/top100.png") : (homeDir + "/top100.png");
+                    exportSaveDialog.open();
+                }
+            }
+            ToolButton {
                 icon.name: "document-save"
                 text: qsTr("Update (OMDb)")
                 display: AbstractButton.TextUnderIcon
                 icon.width: Kirigami.Units.iconSizes.medium
                 icon.height: Kirigami.Units.iconSizes.medium
                 onClicked: {
-                    if (list.currentIndex < 0) { window.showPassiveNotification(qsTr("Select a movie first.")); return }
-                    var info = top100Model.get(list.currentIndex)
-                    if (!info || !info.imdbID || info.imdbID.length === 0) { window.showPassiveNotification(qsTr("No IMDb ID for this movie.")); return }
-                    window.showPassiveNotification(qsTr("Updating from OMDb..."))
-                    var ok = top100Model.updateFromOmdbByImdbId(info.imdbID)
+                    if (list.currentIndex < 0) { window.showPassiveNotification(qsTr("Select a movie first.")); return; }
+                    var info = top100Model.get(list.currentIndex);
+                    if (!info || !info.imdbID || info.imdbID.length === 0) { window.showPassiveNotification(qsTr("No IMDb ID for this movie.")); return; }
+                    window.showPassiveNotification(qsTr("Updating from OMDb..."));
+                    var ok = top100Model.updateFromOmdbByImdbId(info.imdbID);
                     if (!ok) {
-                        window.showPassiveNotification(qsTr("Update failed."))
+                        window.showPassiveNotification(qsTr("Update failed."));
                     } else {
                         var once = function() {
-                            top100Model.reloadCompleted.disconnect(once)
-                            window.showPassiveNotification(qsTr("Updated from OMDb."))
-                        }
-                        top100Model.reloadCompleted.connect(once)
+                            top100Model.reloadCompleted.disconnect(once);
+                            window.showPassiveNotification(qsTr("Updated from OMDb."));
+                        };
+                        top100Model.reloadCompleted.connect(once);
                     }
                 }
             }
@@ -110,6 +133,8 @@ Kirigami.ApplicationWindow {
             }
         }
     }
+
+    // exportTop100ImageQml() inlined into the Export Image ToolButton above to avoid JS inline object syntax pitfalls
 
     globalDrawer: Kirigami.GlobalDrawer {
         actions: [
@@ -168,15 +193,44 @@ Kirigami.ApplicationWindow {
         }
     }
 
-    Dialog {
+    Controls.Dialog {
         id: aboutDialog
         modal: true
         width: Math.min(Kirigami.Units.gridUnit * 40, window.width * 0.6)
         title: UiStrings_ActionAbout
-        standardButtons: Dialog.Ok
+        standardButtons: Controls.Dialog.Ok
         contentItem: Column {
             spacing: Kirigami.Units.smallSpacing
             Kirigami.Heading { level: 3; text: UiStrings_AboutText }
+        }
+    }
+
+    // Export save dialog (pure QQC2, avoids requiring Qt Widgets for native dialogs)
+    Controls.Dialog {
+        id: exportSaveDialog
+        modal: true
+        title: qsTr("Export Image")
+        standardButtons: Controls.Dialog.Ok | Controls.Dialog.Cancel
+        property string pathText: ""
+        contentItem: ColumnLayout {
+            width: Math.min(window.width * 0.8, Kirigami.Units.gridUnit * 50)
+            spacing: Kirigami.Units.smallSpacing
+            Label { text: qsTr("Save as:") }
+            TextField {
+                id: exportPathField
+                Layout.fillWidth: true
+                text: exportSaveDialog.pathText
+                onTextChanged: exportSaveDialog.pathText = text
+            }
+        }
+        onOpened: {
+            x = Math.max(0, Math.round((window.width - width) / 2));
+            y = Math.max(0, Math.round((window.height - height) / 2));
+            exportPathField.forceActiveFocus();
+        }
+        onAccepted: {
+            var ok = top100Model.exportImage(exportSaveDialog.pathText);
+            window.showPassiveNotification(ok ? qsTr("Exported image.") : qsTr("Export failed."));
         }
     }
 
@@ -375,7 +429,7 @@ Kirigami.ApplicationWindow {
         rankDialog.resetAndOpen();
     }
 
-    Dialog {
+    Controls.Dialog {
         id: rankDialog
         modal: true
     // Keep the window title empty; use the centered heading below
@@ -385,7 +439,7 @@ Kirigami.ApplicationWindow {
     // Fixed size and not resizable
     width: Kirigami.Units.gridUnit * 70
     height: Kirigami.Units.gridUnit * 45
-        standardButtons: Dialog.NoButton
+        standardButtons: Controls.Dialog.NoButton
         // Center the dialog on the main window
         anchors.centerIn: parent
 
@@ -684,7 +738,7 @@ Kirigami.ApplicationWindow {
         property var results: []
     }
 
-    Dialog {
+    Controls.Dialog {
         id: addDialog
         modal: true
         // No built-in header; we render heading inside content for reliable spacing
@@ -694,11 +748,11 @@ Kirigami.ApplicationWindow {
         height: window.height * 0.6
         x: (window.width - width) / 2
         y: (window.height - height) / 2
-        standardButtons: Dialog.NoButton
+        standardButtons: Controls.Dialog.NoButton
         property var selected: null
         // Whether a search is currently running (UI disables inputs)
         property bool searching: false
-    onVisibleChanged: if (visible) { x = (window.width - width)/2; y = (window.height - height)/2; infoMessage = "" }
+    onVisibleChanged: if (visible) { x = (window.width - width)/2; y = (window.height - height)/2 }
         contentItem: Item {
             anchors.fill: parent
             anchors.margins: Kirigami.Units.largeSpacing
@@ -887,7 +941,10 @@ Kirigami.ApplicationWindow {
                 Button {
                     id: addBtn
                     text: qsTr("Add")
-                    enabled: resultsList.currentIndex >= 0
+                    enabled: resultsList.currentIndex >= 0 && window.movieCount < 100
+                    ToolTip.visible: !enabled && addBtn.hovered && window.movieCount >= 100
+                    ToolTip.delay: 300
+                    ToolTip.text: qsTr("List full, remove a movie first")
                     onClicked: {
                         if (resultsList.currentIndex < 0) return
                         var imdbSel = selectionModel.results[resultsList.currentIndex].imdbID
@@ -904,14 +961,14 @@ Kirigami.ApplicationWindow {
         }
     }
 
-    Dialog {
+    Controls.Dialog {
         id: deleteDialog
         modal: true
         width: Math.min(420, window.width * 0.6)
         property string imdbID: ""
         property string titleText: ""
         title: qsTr("Delete Movie")
-        standardButtons: Dialog.Yes | Dialog.No
+        standardButtons: Controls.Dialog.Yes | Controls.Dialog.No
         contentItem: Column {
             spacing: Kirigami.Units.smallSpacing
             Kirigami.Heading { level: 4; text: qsTr("Delete this movie?") }

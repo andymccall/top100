@@ -894,6 +894,72 @@
 				"$gcc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Configure (cmake) with Cairo check",
+			"type": "shell",
+			"command": "cmake -S . -B build -DTOP100_UI_QT=OFF -DTOP100_UI_KDE=OFF -DTOP100_UI_GTK=OFF",
+			"group": "build"
+		},
+		{
+			"label": "Build (cmake) - after UI polish",
+			"type": "shell",
+			"command": "cmake --build build/linux -j",
+			"group": "build"
+		},
+		{
+			"label": "Reconfigure (cmake) after cairo alias",
+			"type": "shell",
+			"command": "cmake -S . -B build/linux",
+			"group": "build"
+		},
+		{
+			"label": "Build project (Top100)",
+			"type": "shell",
+			"command": "cmake --build /home/andymccall/development/top100/build/linux -j",
+			"group": "build"
+		},
+		{
+			"label": "Run tests after export wiring",
+			"type": "shell",
+			"command": "cd build/linux && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Run CLI to smoke test export path prompt",
+			"type": "shell",
+			"command": "bash -lc 'printf \"e\\n\\nq\\n\" | ./build/linux/top100_cli | head -n 30'",
+			"group": "build"
+		},
+		{
+			"label": "Rebuild CLI only",
+			"type": "shell",
+			"command": "cmake --build build/linux -j --target top100_cli",
+			"group": "build"
+		},
+		{
+			"label": "Run CLI for export (smoke)",
+			"type": "shell",
+			"command": "bash -lc 'printf \"e\\n\\nq\\n\" | ./build/linux/top100_cli | sed -n \"1,40p\"'",
+			"group": "build"
+		},
+		{
+			"label": "Build and run tests (export tweaks)",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after removing stb",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"group": "build"
+		},
+		{
+			"label": "Configure+Build after JPEG",
+			"type": "shell",
+			"command": "cmake --build build --parallel && cd build && ctest --output-on-failure",
+			"group": "build"
 		}
 	]
 }

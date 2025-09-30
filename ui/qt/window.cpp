@@ -111,6 +111,8 @@ Top100QtWindow::Top100QtWindow(QWidget* parent) : QMainWindow(parent) {
     statusBar_->addWidget(statusCountLabel_, 0);
     setStatusBar(statusBar_);
     connectSignals();
+    // Ensure Add state reflects current count on startup
+    updateAddEnabledState();
 }
 
 void Top100QtWindow::buildLayout() {
@@ -268,6 +270,12 @@ void Top100QtWindow::connectSignals() {
     connect(model_, &Top100ListModel::rowsInserted, this, updateCountNow);
     connect(model_, &Top100ListModel::rowsRemoved, this, updateCountNow);
     connect(model_, &Top100ListModel::reloadCompleted, this, updateCountNow);
+    // Keep Add enabled/disabled based on count
+    auto updateAddNow = [this]() { updateAddEnabledState(); };
+    connect(model_, &Top100ListModel::modelReset, this, updateAddNow);
+    connect(model_, &Top100ListModel::rowsInserted, this, updateAddNow);
+    connect(model_, &Top100ListModel::rowsRemoved, this, updateAddNow);
+    connect(model_, &Top100ListModel::reloadCompleted, this, updateAddNow);
     connect(model_, &Top100ListModel::requestSelectRow, this, [this](int row){ if (row >= 0 && row < model_->rowCount()) listView_->setCurrentIndex(model_->index(row, 0)); });
     if (model_->rowCount() > 0) {
         listView_->setCurrentIndex(model_->index(0, 0));
@@ -287,4 +295,11 @@ void Top100QtWindow::updateStatusMovieCount() {
     if (!statusCountLabel_ || !model_) return;
     const int n = model_->rowCount();
     statusCountLabel_->setText(QString::number(n) + (n == 1 ? " movie" : " movies"));
+}
+
+void Top100QtWindow::updateAddEnabledState() {
+    if (!addAct_ || !model_) return;
+    const bool full = model_->rowCount() >= 100;
+    addAct_->setEnabled(!full);
+    addAct_->setToolTip(full ? QStringLiteral("List full, remove a movie first") : QString());
 }

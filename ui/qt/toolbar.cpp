@@ -16,6 +16,8 @@ void Top100QtWindow::buildToolbar() {
 	addAct_ = toolbar_->addAction(QIcon::fromTheme("list-add"), QStringLiteral("Add"));
 	delAct_ = toolbar_->addAction(QIcon::fromTheme("edit-delete"), QStringLiteral("Delete"));
 	refreshTbAct_ = toolbar_->addAction(QIcon::fromTheme("view-refresh"), QStringLiteral("Refresh"));
+	// Export Image
+	exportAct_ = toolbar_->addAction(QIcon::fromTheme("document-export"), QStringLiteral("Export Image"));
 	// Rank
 	QAction* rankAct = toolbar_->addAction(QIcon::fromTheme("favorites"), QStringLiteral("Rank"));
 	postBskyAct_ = toolbar_->addAction(QIcon::fromTheme("cloud-upload"), QStringLiteral("Post BlueSky"));
@@ -26,6 +28,7 @@ void Top100QtWindow::buildToolbar() {
 	connect(addAct_, &QAction::triggered, this, [this]() { onAddMovie(); });
 	connect(delAct_, &QAction::triggered, this, [this]() { onDeleteCurrent(); });
 	connect(refreshTbAct_, &QAction::triggered, this, [this]() { onRefresh(); });
+	connect(exportAct_, &QAction::triggered, this, [this]() { onExportImage(); });
 	connect(rankAct, &QAction::triggered, this, [this]() { onOpenRankDialog(); });
 	connect(postBskyAct_, &QAction::triggered, this, [this]() { onPostBlueSky(); });
 	connect(postMastoAct_, &QAction::triggered, this, [this]() { onPostMastodon(); });

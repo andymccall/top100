@@ -16,6 +16,7 @@
 #include "../../lib/omdb.h"
 #include "../common/strings.h"
 #include "../common/constants.h"
+#include "../../lib/image_export.h"
 
 using namespace ui_strings;
 using namespace ui_constants;
@@ -70,6 +71,7 @@ void Top100GtkWindow::reload_model(const Glib::ustring& select_imdb) {
     }
     if (!(sel && sel->get_selected()) && list_store_->children().size() > 0) sel->select(list_store_->children().begin());
     update_status_movie_count();
+    update_add_enabled_state();
 }
 
 void Top100GtkWindow::on_selection_changed() {
@@ -146,7 +148,39 @@ void Top100GtkWindow::on_update_current() {
     }
 }
 
+void Top100GtkWindow::on_export_image() {
+    AppConfig cfg;
+    try { cfg = loadConfig(); } catch (...) { show_status("Cannot load config"); return; }
+    Top100 list(cfg.dataFile);
+    auto movies = list.getMovies(SortOrder::DEFAULT);
+    if (movies.empty()) { show_status("No movies to export"); return; }
+
+    Gtk::FileChooserDialog dialog(*this, "Export Image", Gtk::FILE_CHOOSER_ACTION_SAVE);
+    dialog.add_button("Cancel", Gtk::RESPONSE_CANCEL);
+    dialog.add_button("Save", Gtk::RESPONSE_OK);
+    auto filter = Gtk::FileFilter::create();
+    filter->set_name("PNG Images");
+    filter->add_pattern("*.png");
+    dialog.add_filter(filter);
+    auto home = Glib::get_home_dir();
+    std::string def = home + "/Pictures/top100.png";
+    if (!Glib::file_test(home + "/Pictures", Glib::FILE_TEST_IS_DIR)) {
+        if (Glib::file_test(home + "/pictures", Glib::FILE_TEST_IS_DIR)) def = home + "/pictures/top100.png";
+        else def = home + "/top100.png";
+    }
+    dialog.set_filename(def);
+    if (dialog.run() == Gtk::RESPONSE_OK) {
+        std::string path = dialog.get_filename();
+    bool ok = exportTop100Image(movies, path, "My Top 100 Movies");
+        show_status(ok ? "Exported image" : "Export failed (missing Cairo?)");
+    }
+}
+
 void Top100GtkWindow::on_add_movie() {
+    if (list_store_ && list_store_->children().size() >= 100) {
+        show_status("List full, remove a movie first");
+        return;
+    }
     Top100GtkAddDialog dlg(*this);
     int resp = dlg.run();
     if (resp == Gtk::RESPONSE_OK) {

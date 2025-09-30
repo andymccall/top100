@@ -43,7 +43,7 @@ ApplicationWindow {
         RowLayout { anchors.fill: parent; spacing: 4
             ToolButton { text: "≡"; onClicked: navDrawer.open() }
             Label { text: qsTr("Top100"); font.bold: true; Layout.fillWidth: true }
-            ToolButton { text: qsTr("Add"); onClicked: addDialog.open() }
+            ToolButton { text: qsTr("Add"); enabled: top100Model.count() < 100; onClicked: addDialog.open() }
             ToolButton { text: qsTr("Rank"); onClicked: rankDialog.openRanking() }
             ToolButton { text: qsTr("Refresh"); onClicked: top100Model.reload() }
         }

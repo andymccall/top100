@@ -60,6 +60,7 @@ private:
     QAction* addAct_ = nullptr;
     QAction* delAct_ = nullptr;
     QAction* refreshTbAct_ = nullptr;
+    QAction* exportAct_ = nullptr;
     QAction* postBskyAct_ = nullptr;
     QAction* postMastoAct_ = nullptr;
     QAction* updateAct_ = nullptr;
@@ -76,6 +77,7 @@ private:
     void buildToolbar();
     void connectSignals();
     void updateStatusMovieCount();
+    void updateAddEnabledState();
 
     // Handlers (implemented in handlers.cpp)
     void onAddMovie();
@@ -84,6 +86,7 @@ private:
     void onPostBlueSky();
     void onPostMastodon();
     void onUpdateFromOmdb();
+    void onExportImage();
     void onOpenRankDialog();
     void onSortChanged();
     void updateDetails();

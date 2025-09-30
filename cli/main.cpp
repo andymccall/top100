@@ -24,6 +24,7 @@
 #include <cpr/cpr.h>
 #include "posting.h"
 #include <limits>
+#include "image_export.h"
 
 int main()
 {
@@ -43,6 +44,10 @@ int main()
     switch (input)
         {
         case '1':
+            if (top100.getMovies(SortOrder::DEFAULT).size() >= 100) {
+                std::cout << "List full, remove a movie first\n";
+                break;
+            }
             addMovie(top100);
             break;
         case '2':
@@ -53,6 +58,10 @@ int main()
             break;
         case '4':
             if (cfg.omdbEnabled) {
+                if (top100.getMovies(SortOrder::DEFAULT).size() >= 100) {
+                    std::cout << "List full, remove a movie first\n";
+                    break;
+                }
                 addFromOmdb(top100, cfg.omdbApiKey);
             } else {
                 // Configure OMDb API key
@@ -215,6 +224,22 @@ int main()
                 }
             }
             break;
+        case 'e': {
+            // Compute default path under ~/Pictures if present
+            const char* home = std::getenv("HOME");
+            std::string defPath = home ? std::string(home) + "/Pictures/top100.png" : std::string("top100.png");
+            if (!(home && std::filesystem::exists(std::string(home) + "/Pictures"))) {
+                if (home && std::filesystem::exists(std::string(home) + "/pictures")) defPath = std::string(home) + "/pictures/top100.png";
+                else defPath = (home ? std::string(home) + "/top100.png" : std::string("top100.png"));
+            }
+            std::cout << "Enter output PNG path (default " << defPath << "): ";
+            if (std::cin.peek() == '\n') std::cin.get();
+            std::string path; std::getline(std::cin, path);
+            if (path.empty()) path = defPath;
+            auto movies = top100.getMovies(SortOrder::DEFAULT);
+            bool ok = exportTop100Image(movies, path, "My Top 100 Movies");
+            std::cout << (ok ? "Exported image.\n" : "Export failed (missing Cairo?).\n");
+            break; }
         case '0':
             // Edit post header/footer
             std::cout << "Enter new post header (empty to clear, leave blank to keep current):\n> ";

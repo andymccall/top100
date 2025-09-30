@@ -91,7 +91,9 @@ private:
     void on_selection_changed();
     void on_delete_current();
     void on_update_current();
+    void on_export_image();
     void on_add_movie();
     static std::string join(const std::vector<std::string>& v, const std::string& sep);
     void update_status_movie_count();
+        void update_add_enabled_state();
 };
